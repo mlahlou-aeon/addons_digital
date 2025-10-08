@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Action & Menu -->
+    <record id="action_vendor_support" model="ir.actions.act_window">
+        <field name="name">Support fournisseur</field>
+        <field name="res_model">vendor.support</field>
+        <field name="view_mode">list,form,kanban,pivot,graph</field>
+        <field name="context">{}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">Aucun support fournisseur. Créons-en un !</p>
+        </field>
+    </record>
+
+    <menuitem id="menu_vendor_support_root" name="Supports fournisseur" parent="purchase.menu_purchase_root" sequence="60" action="action_vendor_support"/>
+
+    <!-- list view -->
+    <record id="view_vendor_support_list" model="ir.ui.view">
+        <field name="name">vendor.support.list</field>
+        <field name="model">vendor.support</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="category_id"/>
+                <field name="commission_pct"/>
+                <field name="minimum_buy_amount"/>
+                <field name="blacklisted"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Kanban view -->
+    <record id="view_vendor_support_kanban" model="ir.ui.view">
+        <field name="name">vendor.support.kanban</field>
+        <field name="model">vendor.support</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="partner_id" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="category_id"/>
+                <field name="commission_pct"/>
+                <field name="minimum_buy_amount"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click o_kanban_record">
+                            <div class="o_kanban_details">
+                                <strong><field name="name"/></strong>
+                                <div><span t-esc="record.partner_id.raw_value and record.partner_id.value"/></div>
+                                <div><span t-esc="record.category_id.raw_value and record.category_id.value"/></div>
+                                <div>Commission: <t t-esc="record.commission_pct.value or 0"/>%</div>
+                                <div>Min. Buy: <t t-esc="record.minimum_buy_amount.value or 0"/></div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Form view -->
+    <record id="view_vendor_support_form" model="ir.ui.view">
+        <field name="name">vendor.support.form</field>
+        <field name="model">vendor.support</field>
+        <field name="arch" type="xml">
+            <form string="Support Fournisseur">
+                <sheet>
+                    <group>
+                        <group string="Informations générales">
+                            <field name="name" string="Nom"/>
+                            <field name="partner_id" string="Fournisseur"/>
+                            <field name="category_id" string="Catégorie"/>
+                            <field name="company_id" invisible="1"/>
+                            <field name="currency_id" string="Devise"/>
+                            <field name="url" string="URL"/>
+                            <field name="description" string="Description"/>
+                            <field name="media_kit" filename="media_kit_filename"/>
+                        </group>
+                        <group string="Audience et Performance">
+                            <field name="visitors_unique"/>
+                            <field name="sessions_per_month"/>
+                            <field name="pageviews_per_month"/>
+                            <field name="avg_visit_duration"/>
+                            <field name="bounce_rate"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Versions">
+                            <field name="version_ar"/>
+                            <field name="version_fr"/>
+                            <field name="version_en"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Réseaux sociaux">
+                            <group>
+                                <field name="social_youtube"/>
+                                <field name="social_facebook"/>
+                                <field name="social_instagram"/>
+                                <field name="social_linkedin"/>
+                            </group>
+                        </page>
+                        <page string="Segmentation">
+                            <group>
+                                <field name="seg_mobile_pct"/>
+                                <field name="seg_desktop_pct"/>
+                                <field name="csp"/>
+                            </group>
+                        </page>
+                        <page string="Conditions commerciales">
+                            <group>
+                                <field name="commission_pct"/>
+                                <field name="campaign_commitment"/>
+                                <field name="delivery_issues"/>
+                                <field name="blacklisted"/>
+                                <field name="minimum_buy_amount"/>
+                            </group>
+                        </page>
+                        <page string="Gratuités">
+                            <field name="free_tier_ids">
+                                <list editable="bottom">
+                                    <field name="min_qty"/>
+                                    <field name="free_percent"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Contacts liés">
+                            <field name="contact_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

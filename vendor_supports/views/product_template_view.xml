@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_product_template_form_inherit_catalog" model="ir.ui.view">
+        <field name="name">product.template.form.catalog.enrichment</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='general_information']/group[1]" position="inside">
+                <group>
+                    <field name="product_kind" nolabel="0"/>
+                    <field name="display_scope" nolabel="0"/>
+                    <field name="ras" nolabel="0"/>
+                    <field name="margin_pct" readonly="1" nolabel="0"/>
+                    <group string="Période de validité">
+                        <field name="valid_from"/>
+                        <field name="valid_to"/>
+                    </group>
+                </group> 
+            </xpath>
+
+            <xpath expr="//div[@name='list_price_uom']" position="after">
+                <field name="public_price" nolabel="0"/>
+            </xpath>
+            
+            <xpath expr="//field[@name='standard_price']" position="attributes">
+                <attribute name="readonly">seller_ids.support_id !=False</attribute>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

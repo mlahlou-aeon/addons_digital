@@ -1,0 +1,19 @@
+<odoo>
+    <record id="view_sale_client_po_confirm_wizard_form" model="ir.ui.view">
+        <field name="name">sale.client.po.wizard.form</field>
+        <field name="model">sale.client.po.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Joindre BC Client">
+                <group>
+                    <field name="sale_id" readonly="1"/>
+                    <field name="file" filename="filename" required="1"/>
+                    <field name="filename"/>
+                </group>
+                <footer>
+                    <button name="action_attach_and_confirm" type="object" class="btn-primary" string="Joindre"/>
+                    <button special="cancel" class="btn-secondary" string="Annuler"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

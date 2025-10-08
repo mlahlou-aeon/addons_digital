@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Add Support on Purchase Order lines (tree + line form) -->
+    <record id="purchase_order_form_inherit_line_support" model="ir.ui.view">
+        <field name="name">purchase.order.form.line.support</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <field name="origin" position="after">
+                <field name="sale_id"/>
+            </field>
+        <!-- In the lines tree: after product -->
+        <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
+            <field name="support_id"
+                invisible='not has_available_supports'
+                domain="[('id','in', available_support_ids)]"/>
+        </xpath>
+
+        <!-- In the line form: after product -->
+        <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="after">
+            <field name="support_id"
+                invisible='has_available_supports'
+                domain="[('id','in', available_support_ids)]"/>
+        </xpath>
+
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Add Support on SO lines (tree + form) -->
+    <record id="view_order_form_inherit_support" model="ir.ui.view">
+        <field name="name">sale.order.form.support.field</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+        
+            <xpath expr="//sheet/div[hasclass('oe_button_box')]" position="inside">
+                <button class="oe_stat_button" name="action_open_purchase_order" type="object" icon="fa-bars">
+                    <div class="o_field_widget o_stat_info">
+                        <span class="o_stat_value" align="center">
+                            <field name="purchase_order_count"/>
+                        </span>
+                        <span class="o_stat_text">Achat</span>
+                    </div>
+                </button>
+            </xpath>
+        <!-- Column in the order lines tree, after product -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
+                <field name="support_id"
+                    invisible="not has_available_supports"
+                    domain="[('id','in', available_support_ids)]"/>
+            </xpath>
+
+        <!-- Field in the line form, after product -->
+            <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="after">
+                <field name="support_id"
+                    invisible="not has_available_supports"
+                    domain="[('id','in', available_support_ids)]"/>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="after">
+                <field name="public_price" readonly="1"/>
+            </xpath>
+
+            <!-- In the line pop-up form -->
+            <xpath expr="//field[@name='order_line']/form//field[@name='price_unit']" position="after">
+                <field name="public_price" readonly="1"/>
+            </xpath>
+
+        </field>
+    </record>
+</odoo>

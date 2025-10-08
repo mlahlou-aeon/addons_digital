@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="support_category_website" model="vendor.support.category">
+        <field name="name">Website</field>
+    </record>
+    <record id="support_category_app" model="vendor.support.category">
+        <field name="name">Mobile App</field>
+    </record>
+    <record id="support_category_social" model="vendor.support.category">
+        <field name="name">Social Network</field>
+    </record>
+
+    <record id="product_category_premium" model="product.category">
+        <field name="name">Premium</field>
+    </record>
+    <record id="product_category_prestation" model="product.category">
+        <field name="name">Achat de prestation</field>
+    </record>
+    <record id="product_category_adserve" model="product.category">
+        <field name="name">AdServe</field>
+    </record>
+    <record id="product_category_community_mgmt" model="product.category">
+        <field name="name">Community Management</field>
+    </record>
+    <record id="product_category_consulting" model="product.category">
+        <field name="name">Consulting</field>
+    </record>
+    <record id="product_category_content" model="product.category">
+        <field name="name">Content</field>
+    </record>
+    <record id="product_category_emailing" model="product.category">
+        <field name="name">Emailing</field>
+    </record>
+    <record id="product_category_infographie" model="product.category">
+        <field name="name">Infographie</field>
+    </record>
+    <record id="product_category_internationale_platform" model="product.category">
+        <field name="name"> Plateforme internationale</field>
+    </record>
+    <record id="product_category_other" model="product.category">
+        <field name="name">Autres</field>
+    </record>
+</odoo>
