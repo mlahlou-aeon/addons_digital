@@ -33,11 +33,13 @@
 
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="after">
                 <field name="public_price" readonly="1"/>
+                <field name="commission_pct" />
             </xpath>
 
             <!-- In the line pop-up form -->
             <xpath expr="//field[@name='order_line']/form//field[@name='price_unit']" position="after">
                 <field name="public_price" readonly="1"/>
+                <field name="commission_pct" />
             </xpath>
 
         </field>

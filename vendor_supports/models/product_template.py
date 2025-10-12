@@ -19,6 +19,7 @@ class ProductTemplate(models.Model):
     valid_from = fields.Date("Date de début")
     valid_to = fields.Date("Date de fin")
     margin_pct = fields.Float("Marge (%)", compute='_compute_margin', store=False)
+    standard_price = fields.Float("Prix d'achat",compute='_compute_cost_from_public')
 
 
 
@@ -38,7 +39,7 @@ class ProductTemplate(models.Model):
         self.ensure_one()
         return self.seller_ids[:1] if self.seller_ids else False
 
-    def _recompute_cost_from_public(self):
+    def _compute_cost_from_public(self):
         """Applique la règle: si support => cost = public * (1 - pct/100), sinon ne rien toucher."""
         for t in self:
             public = t.public_price or 0.0
@@ -50,12 +51,6 @@ class ProductTemplate(models.Model):
                 cost = public * (1.0 - pct / 100.0)
                 if cost < 0:
                     cost = 0.0
-                if t.currency_id:
-                    cost = t.currency_id.round(cost)
                 t.standard_price = cost
                 t.list_price = public
-
-    @api.onchange('public_price', 'seller_ids', 'seller_ids.support_id', 'seller_ids.support_id.commission_pct')
-    def _onchange_cost_from_public(self):
-        self._recompute_cost_from_public()
 

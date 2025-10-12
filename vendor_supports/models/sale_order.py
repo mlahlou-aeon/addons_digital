@@ -279,6 +279,7 @@ class SaleOrderLine(models.Model):
         domain="[('id', 'in', available_support_ids)]",
         help="Support available for the selected product (derived from vendor pricelists).",
     )
+    commission_pct = fields.Float('Commission',compute='_compute_commission_pct',store=True,)
     available_support_ids = fields.Many2many(
         'vendor.support',
         compute='_compute_available_supports',
@@ -299,6 +300,30 @@ class SaleOrderLine(models.Model):
         help="Ligne de remise générée automatiquement depuis la grille du Support."
     )
 
+
+    @api.depends(
+        'price_unit',
+        'purchase_price',
+        'support_id.commission_pct'
+    )
+    def _compute_commission_pct(self):
+        """
+        commission (%) = (price_unit - cost_in_order_currency) / price_unit * 100
+        Fallback to support's default when we cannot compute.
+        """
+        for line in self:
+            # default from support
+            fallback = float(line.support_id.commission_pct or 0.0)
+
+            price = float(line.price_unit or 0.0)
+            cost_company = float(line.purchase_price or 0.0)  # in company currency on SOL
+            if price <= 0:
+                line.commission_pct = fallback
+                continue
+
+            pct = (price - line.purchase_price) / price * 100.0 if price > 0 else 0.0
+            # if nothing meaningful (e.g., cost not set), keep support default
+            line.commission_pct = round(pct, 2) if (cost_company > 0.0) else fallback
     
 
     @api.depends('product_id')

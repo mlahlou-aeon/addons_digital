@@ -9,7 +9,7 @@
         "base",
         "contacts",
         "purchase",
-        "sale",
+        "sale_management",
         "product"
     ],
     "data": [
