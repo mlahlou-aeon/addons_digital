@@ -69,11 +69,10 @@
                             <field name="name" string="Nom"/>
                             <field name="partner_id" string="Fournisseur"/>
                             <field name="category_id" string="Catégorie"/>
-                            <field name="company_id" invisible="1"/>
                             <field name="currency_id" string="Devise"/>
+                            <field name="company_id" invisible="1"/>
                             <field name="url" string="URL"/>
                             <field name="description" string="Description"/>
-                            <field name="media_kit" filename="media_kit_filename"/>
                         </group>
                         <group string="Audience et Performance">
                             <field name="visitors_unique"/>
@@ -81,6 +80,7 @@
                             <field name="pageviews_per_month"/>
                             <field name="avg_visit_duration"/>
                             <field name="bounce_rate"/>
+                            <field name="media_kit" filename="media_kit_filename"/>
                         </group>
                     </group>
                     <group>
