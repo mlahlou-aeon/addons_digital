@@ -30,7 +30,6 @@ class SaleOrder(models.Model):
         compute="_get_po",
     )
 
-
     @api.onchange('order_line')
     def _onchange_check_support_min_buy(self):
         """Alerte à l'édition si un Minimum Buy (par support) n'est pas atteint."""
@@ -94,9 +93,6 @@ class SaleOrder(models.Model):
                 raise UserError(
                     "Minimum de commande par support non atteint :\n" + "\n".join(errors)
                 )
-
-
-
 
     # ---- Auto-create POs on confirm (keep your existing logic if you have one) ----
     def action_confirm(self):
@@ -300,7 +296,6 @@ class SaleOrderLine(models.Model):
         help="Ligne de remise générée automatiquement depuis la grille du Support."
     )
 
-
     @api.depends(
         'price_unit',
         'purchase_price',
@@ -324,7 +319,6 @@ class SaleOrderLine(models.Model):
             pct = (price - line.purchase_price) / price * 100.0 if price > 0 else 0.0
             # if nothing meaningful (e.g., cost not set), keep support default
             line.commission_pct = round(pct, 2) if (cost_company > 0.0) else fallback
-    
 
     @api.depends('product_id')
     def _compute_available_supports(self):

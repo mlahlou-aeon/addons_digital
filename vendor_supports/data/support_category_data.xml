@@ -9,7 +9,6 @@
     <record id="support_category_social" model="vendor.support.category">
         <field name="name">Social Network</field>
     </record>
-
     <record id="product_category_premium" model="product.category">
         <field name="name">Premium</field>
     </record>

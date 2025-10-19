@@ -21,8 +21,6 @@ class ProductTemplate(models.Model):
     margin_pct = fields.Float("Marge (%)", compute='_compute_margin', store=False)
     standard_price = fields.Float("Prix d'achat",compute='_compute_cost_from_public')
 
-
-
     @api.constrains('valid_from', 'valid_to')
     def _check_validity_range(self):
         for p in self:
@@ -33,7 +31,6 @@ class ProductTemplate(models.Model):
     def _compute_margin(self):
         for p in self:
             p.margin_pct = ((p.list_price or 0.0) and ((p.list_price - (p.standard_price or 0.0)) / (p.list_price or 1.0) * 100.0)) or 0.0
-    
 
     def _get_unique_seller(self):
         self.ensure_one()
@@ -53,4 +50,3 @@ class ProductTemplate(models.Model):
                     cost = 0.0
                 t.standard_price = cost
                 t.list_price = public
-
