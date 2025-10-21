@@ -26,6 +26,8 @@ class SaleOrder(models.Model):
             purchase_ids = self.env['purchase.order'].sudo().search([('origin', '=', self.name)])
         orders.purchase_order_count = len(purchase_ids)
 
+    start_date = fields.Date("Date début")
+    end_date = fields.Date("Date fin")
     purchase_order_count = fields.Integer(
         string="Purchase Orders",
         compute="_get_po",
@@ -117,8 +119,7 @@ class SaleOrder(models.Model):
         PurchaseOrder = self.env["purchase.order"]
         PurchaseOrderLine = self.env["purchase.order.line"]
 
-        # group lines by vendor (from your logic)
-        grouped = {}  # {partner_id: [(line, sellerinfo or False), ...]}
+        grouped = {}
         for line in self.order_line:
             if not line.product_id:
                 continue
@@ -132,6 +133,9 @@ class SaleOrder(models.Model):
 
         created_pos = []
         for partner_id, pairs in grouped.items():
+            if line.product_id.product_kind != 'external':
+                continue
+            
             vendor = self.env["res.partner"].browse(partner_id)
             # ensure PO is created in SO company (multi-company safety)
             po = PurchaseOrder.with_company(self.company_id).create({
@@ -403,3 +407,12 @@ class SaleOrderLine(models.Model):
         """Optional: if exactly one support is available for the chosen product, prefill it."""
         if self.product_id and self.available_support_ids and len(self.available_support_ids) == 1:
             self.support_id = self.available_support_ids[:1]
+
+
+    @api.depends('product_id', 'company_id', 'currency_id', 'product_uom')
+    def _compute_purchase_price(self):
+        for line in self:
+            if not line.product_id:
+                line.purchase_price = 0.0
+                continue
+            line.purchase_price = line.product_id.standard_price

@@ -22,6 +22,10 @@
                 <attribute name="invisible">True</attribute>
             </xpath>
 
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="start_date" widget="daterange" options='{"end_date_field": "end_date", "always_range": "1"}'/>
+            </xpath>
+
         <!-- Column in the order lines tree, after product -->
             <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
                 <field name="support_id"

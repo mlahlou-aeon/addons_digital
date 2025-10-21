@@ -10,7 +10,8 @@
         "contacts",
         "purchase",
         "sale_management",
-        "product"
+        "product",
+        "sale_margin",
     ],
     "data": [
         "security/vendor_supports_security.xml",
