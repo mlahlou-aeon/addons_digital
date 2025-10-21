@@ -11,7 +11,8 @@
         </field>
     </record>
 
-    <menuitem id="menu_vendor_support_root" name="Supports" parent="purchase.menu_procurement_management" sequence="60" action="action_vendor_support"/>
+    <menuitem id="menu_vendor_support_root" name="Supports" parent="purchase.menu_procurement_management" sequence="60" action="action_vendor_support"
+    groups="vendor_supports.group_support_manager"/>
 
     <!-- list view -->
     <record id="view_vendor_support_list" model="ir.ui.view">
@@ -133,6 +134,7 @@
                         </page>
                     </notebook>
                 </sheet>
+                <chatter/>
             </form>
         </field>
     </record>

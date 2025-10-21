@@ -3,6 +3,7 @@ from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError,UserError
 from dateutil.relativedelta import relativedelta
 from collections import defaultdict
+from odoo.tools import float_round, float_is_zero, float_compare
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -144,15 +145,8 @@ class SaleOrder(models.Model):
                 po_uom = (seller and seller.product_uom) or so_line.product_id.uom_po_id or so_line.product_uom
                 qty = so_line.product_uom._compute_quantity(so_line.product_uom_qty, po_uom)
 
-                price = (seller and seller.price) or (so_line.product_id.standard_price or 0.0)
-                seller_currency = (seller and seller.currency_id) or False
-                if seller_currency and seller_currency != po.currency_id:
-                    price = seller_currency._convert(price, po.currency_id, po.company_id, fields.Date.today())
-
                 taxes = so_line.product_id.supplier_taxes_id.filtered(lambda t: t.company_id == po.company_id)
                 date_planned = fields.Datetime.now()
-                if seller and seller.delay:
-                    date_planned += relativedelta(days=seller.delay)
 
                 PurchaseOrderLine.create({
                     "order_id": po.id,
@@ -161,11 +155,12 @@ class SaleOrder(models.Model):
                     "name": so_line.name or so_line.product_id.display_name,
                     "product_qty": qty,
                     "product_uom": po_uom.id,
-                    "price_unit": price,
+                    "price_unit": so_line.purchase_price,
                     "date_planned": date_planned,
                     "taxes_id": [(6, 0, taxes.ids)],
                 })
             created_pos.append(po)
+            po.button_confirm()
 
 
     def _get_vendor_and_seller_for_line(self, line):
@@ -198,26 +193,37 @@ class SaleOrder(models.Model):
         return prod
     
     def _recompute_support_discount_lines(self):
+        """Grant free quantities per support, using the discount product for generated lines."""
         for order in self:
             currency = order.currency_id
             discount_product = order._get_support_discount_product()
 
-            # Lignes sources (hors lignes déjà remise)
-            src_lines = order.order_line.filtered(lambda l: not l.display_type and not l.is_support_discount_line and l.support_id)
+            # Source lines: real items with support, excluding already generated lines
+            src_lines = order.order_line.filtered(
+                lambda l: not l.display_type
+                        and not l.is_support_discount_line
+                        and l.support_id
+            )
 
-            # Grouper par support
+            # Group source lines by support
             by_support = defaultdict(list)
             for l in src_lines:
                 by_support[l.support_id].append(l)
 
-            # Indexer les lignes de remise existantes par support
-            existing = { (l.support_id.id): l for l in order.order_line.filtered(lambda l: l.is_support_discount_line) }
+            # Index existing generated lines by (support_id, original_product_id, original_uom_id)
+            existing = {}
+            for l in order.order_line.filtered(lambda l: l.is_support_discount_line and not l.display_type):
+                # We encode the original product/uom in the name, but key by support + name to be safe
+                # Prefer storing a hidden field if you want stronger linkage
+                key = (l.support_id.id, l.name)
+                existing[key] = l
 
-            # Pour chaque support : déterminer le % applicable (meilleur seuil atteint)
             supports_seen = set()
+
             for support, lines in by_support.items():
                 supports_seen.add(support.id)
 
+                # Determine free % (best tier by total qty)
                 total_qty = sum(l.product_uom_qty for l in lines)
                 tiers = support.free_tier_ids.filtered(lambda t: total_qty >= (t.min_qty or 0.0))
                 if tiers:
@@ -226,39 +232,67 @@ class SaleOrder(models.Model):
                 else:
                     rate = 0.0
 
-                # Base de remise = somme HT des lignes du support
-                base_taxed = sum(l.price_total for l in lines)  # déjà en devise du devis
-                discount_amount = currency.round(base_taxed * rate)  # montant positif à déduire
+                # Desired free qty per (original product, original uom), rounding DOWN
+                desired_map = defaultdict(float)  # (prod_id, uom_id) -> free_qty
+                for l in lines:
+                    if rate <= 0 or float_is_zero(l.product_uom_qty, precision_rounding=l.product_uom.rounding):
+                        continue
+                    free_qty = float_round(
+                        l.product_uom_qty * rate,
+                        precision_rounding=l.product_uom.rounding,
+                        rounding_method='DOWN',
+                    )
+                    if not float_is_zero(free_qty, precision_rounding=l.product_uom.rounding):
+                        desired_map[(l.product_id.id, l.product_uom.id)] += free_qty
 
-                # Créer / mettre à jour / supprimer la ligne de remise
-                disc_line = existing.get(support.id)
-                if discount_amount > 0:
-                    order_id = self.env['sale.order'].search([('name','=',order.name)])
-                    vals = {
-                        'order_id': order_id.id,
-                        'product_id': discount_product.id,
-                        'name': f"Remise {support.display_name} ({int(rate*100)}%)",
-                        'product_uom_qty': 1.0,
-                        'price_unit': -discount_amount,   # négatif = déduction
-                        'tax_id': [(6, 0, [])],           # pas de taxes sur la remise globale
-                        'support_id': support.id,
-                        'is_support_discount_line': True,
-                        'display_type': False,
-                    }
-                    if disc_line:
-                        disc_line.with_context(skip_support_discount=True).write(vals)
+                # Create/update zero-priced lines using the discount product
+                desired_keys_for_cleanup = set()
+                for (orig_prod_id, orig_uom_id), desired_free_qty in desired_map.items():
+                    # Line label carries support + original product reference for clarity
+                    line_name = f"Gratuité {support.display_name}"
+
+                    key = (support.id, line_name)
+                    desired_keys_for_cleanup.add(key)
+                    free_line = existing.get(key)
+
+                    if free_line:
+                        # Update qty if changed (UoM is that of the line, we keep it consistent)
+                        if float_compare(
+                            free_line.product_uom_qty, desired_free_qty,
+                            precision_rounding=free_line.product_uom.rounding
+                        ) != 0:
+                            free_line.with_context(skip_support_discount=True).write({
+                                'product_uom_qty': desired_free_qty,
+                                'name': line_name,
+                                'price_unit': 0.0,
+                                'discount': 0.0,
+                                'tax_id': [(6, 0, [])],
+                            })
                     else:
-                        self.env['sale.order.line'].with_context(skip_support_discount=True).create(vals)
-                else:
-                    if disc_line:
-                        disc_line.with_context(skip_support_discount=True).unlink()
+                        # Create a new zero-price line with the discount product
+                        order_id = self.env['sale.order'].search([('name','=',order.name)])
+                        self.env['sale.order.line'].with_context(skip_support_discount=True).create({
+                            'order_id': order_id.id,
+                            'product_id': discount_product.id,
+                            'product_uom': orig_uom_id,         # keep the original UoM bucket
+                            'product_uom_qty': desired_free_qty,
+                            'price_unit': 0.0,                  # free
+                            'discount': 0.0,
+                            'tax_id': [(6, 0, [])],             # no taxes on free qty
+                            'name': line_name,
+                            'is_support_discount_line': True,
+                        })
 
-            # Nettoyer les remises dont le support n'est plus présent
-            for sup_id, line in existing.items():
-                if sup_id not in supports_seen:
+                # Remove obsolete generated lines for this support
+                for (sup_id, name), line in list(existing.items()):
+                    if sup_id == support.id and (sup_id, name) not in desired_keys_for_cleanup:
+                        line.with_context(skip_support_discount=True).unlink()
+
+            # Cleanup: remove generated lines whose support vanished
+            for line in order.order_line.filtered(lambda l: l.is_support_discount_line and not l.display_type):
+                if line.support_id and line.support_id.id not in supports_seen:
                     line.with_context(skip_support_discount=True).unlink()
 
-    # --- déclencheurs : édition, création, écriture, confirmation ---
     @api.onchange('order_line')
     def _onchange_support_discount(self):
         if self.env.context.get('skip_support_discount'):

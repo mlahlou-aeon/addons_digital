@@ -18,7 +18,19 @@
         <field name="inherit_id" ref="product.product_supplierinfo_tree_view"/>
         <field name="arch" type="xml">
             <xpath expr="//list" position="inside">
-                <field string="support" name="support_id" optional="show"/>
+                <field string="Support" name="support_id" optional="show"/>
+            </xpath>
+            <xpath expr="//list/field[@name='min_qty']" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='price']" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='delay']" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+            <xpath expr="//list/field[@name='currency_id']" position="attributes">
+                <attribute name="readonly">True</attribute>
             </xpath>
         </field>
     </record>

@@ -8,7 +8,7 @@
         <field name="arch" type="xml">
         
             <xpath expr="//sheet/div[hasclass('oe_button_box')]" position="inside">
-                <button class="oe_stat_button" name="action_open_purchase_order" type="object" icon="fa-bars">
+                <button class="oe_stat_button" name="action_open_purchase_order" type="object" icon="fa-credit-card">
                     <div class="o_field_widget o_stat_info">
                         <span class="o_stat_value" align="center">
                             <field name="purchase_order_count"/>
@@ -17,6 +17,11 @@
                     </div>
                 </button>
             </xpath>
+
+            <xpath expr="//button[@name='action_view_purchase_orders']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+
         <!-- Column in the order lines tree, after product -->
             <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
                 <field name="support_id"
@@ -24,22 +29,30 @@
                     domain="[('id','in', available_support_ids)]"/>
             </xpath>
 
-        <!-- Field in the line form, after product -->
+            <xpath expr="//field[@name='order_line']/list/field[@name='qty_delivered']" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='qty_invoiced']" position="attributes">
+                <attribute name="column_invisible">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
+                <attribute name="string">Prix de vente</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="before">
+                <field name="public_price" readonly="1"/>
+                <field name="purchase_price" string="Prix d’achat" />
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="after">
+                <field name="commission_pct" />
+            </xpath>
+            
+ 
             <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="after">
                 <field name="support_id"
                     invisible="not has_available_supports"
                     domain="[('id','in', available_support_ids)]"/>
-            </xpath>
-
-            <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="after">
-                <field name="public_price" readonly="1"/>
-                <field name="commission_pct" />
-            </xpath>
-
-            <!-- In the line pop-up form -->
-            <xpath expr="//field[@name='order_line']/form//field[@name='price_unit']" position="after">
-                <field name="public_price" readonly="1"/>
-                <field name="commission_pct" />
             </xpath>
 
         </field>

@@ -13,7 +13,7 @@
         "product"
     ],
     "data": [
-        #"security/vendor_supports_security.xml",
+        "security/vendor_supports_security.xml",
         "security/ir.model.access.csv",
         "views/vendor_support_views.xml",
         "views/res_partner_views.xml",

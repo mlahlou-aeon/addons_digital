@@ -37,6 +37,11 @@
                     </field>
                 </page>
             </xpath>
+
+            <xpath expr="//field[@name='category_id']" position="attributes">
+                <attribute name="string">Catégorie</attribute>
+                <attribute name="placeholder"></attribute>
+            </xpath>
         </field>
     </record>
 </odoo>

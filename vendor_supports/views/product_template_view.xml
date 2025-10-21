@@ -8,7 +8,6 @@
             <xpath expr="//page[@name='general_information']/group[@name='internal_notes']" position="before">
                 <group>
                     <group string="Paramètres">
-                        <field name="product_kind"/>
                         <field name="display_scope"/>
                         <field name="ras"/>
                     </group>
@@ -18,22 +17,51 @@
                     </group>
                 </group> 
             </xpath>
+            <xpath expr="//field[@name='default_code']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='categ_id']" position="attributes">
+                <attribute name="invisible">True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='product_tooltip']" position="after">
+                <field name="default_code"/>
+                <field name="categ_id"/>
+                <field name="product_kind"/>
+                <field name="platforme" invisible="product_kind != 'international'"/>
+            </xpath>
 
             <xpath expr="//div[@name='list_price_uom']" position="after">
                 <field name="uom_id" string="Unité" options="{'no_create': True}"/>
                 <field name="public_price" nolabel="0"/>
-                <field name="margin_pct" readonly="1" nolabel="0"/>
+                <field name="has_support_vendor" invisible="1"/>
             </xpath>
-            
+            <xpath expr="//field[@name='supplier_taxes_id']" position="after">
+                <field name="margin_pct" readonly="1" nolabel="0" invisible="product_kind != 'external'"/>
+            </xpath>
             <xpath expr="//field[@name='standard_price']" position="attributes">
-                <attribute name="readonly">seller_ids.support_id !=False</attribute>
+                <attribute name="readonly">has_support_vendor == True</attribute>
             </xpath>
+
             <xpath expr="//field[@name='standard_price']" position="attributes">
                 <attribute name="string">Prix d'achat</attribute>
             </xpath>
+
+            <xpath expr="//div[@name='standard_price_uom']" position="attributes">
+                <attribute name="invisible">product_kind != 'external'</attribute>
+            </xpath>
+
+            <xpath expr="//label[@for='standard_price']" position="attributes">
+                <attribute name="invisible">product_kind != 'external'</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='supplier_taxes_id']" position="attributes">
+                <attribute name="invisible">product_kind != 'external'</attribute>
+            </xpath>
+
             <xpath expr="//label[@for='list_price']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
+
             <xpath expr="//div[@name='list_price_uom']" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>

@@ -11,7 +11,7 @@
                 </group>
                 <footer>
                     <button name="action_attach_and_confirm" type="object" class="btn-primary" string="Joindre"/>
-                    <button special="cancel" class="btn-secondary" string="Annuler"/>
+                    <button special="cancel" class="btn-secondary" string="Skip"/>
                 </footer>
             </form>
         </field>

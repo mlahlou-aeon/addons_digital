@@ -16,6 +16,7 @@ class VendorSupport(models.Model):
     _description = 'Vendor Support'
     _order = 'name'
     _check_company_auto = True
+    _inherit = ['mail.thread']
 
     name = fields.Char('Nom', required=True)
     partner_id = fields.Many2one('res.partner', string='Fournisseur', required=True, domain=[('supplier_rank', '>', 0)])
