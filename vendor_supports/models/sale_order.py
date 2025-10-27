@@ -5,6 +5,15 @@ from dateutil.relativedelta import relativedelta
 from collections import defaultdict
 from odoo.tools import float_round, float_is_zero, float_compare
 
+SALE_ORDER_STATE = [
+    ('draft', "Devis"),
+    ('sent', "Envoyé"),
+    ('to_validate', 'À valider'),
+    ('to_confirm', 'À confirmer'),
+    ('sale', "Commande"),
+    ('cancel', "Annulé"),
+]
+
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
@@ -33,9 +42,78 @@ class SaleOrder(models.Model):
         compute="_get_po",
     )
 
-    @api.onchange('order_line')
+    state = fields.Selection(selection=SALE_ORDER_STATE,
+        string="Status",
+        readonly=True, copy=False, index=True,
+        tracking=3,
+        default='draft')
+
+    approval_required_level = fields.Selection(
+        [('none', 'Aucune'), ('n1', 'Approbation N+1'), ('n2', 'Approbation N+1 & N+2')],
+        string="Niveau d’approbation requis", compute="_compute_approval_required_level", store=True
+    )
+
+    @api.depends(
+        "order_line.commission_pct",
+        "order_line.support_id", "order_line.support_id.commission_pct",
+        "amount_total",
+    )
+    def _compute_approval_required_level(self):
+        for o in self:
+            lines = o.order_line.filtered(lambda l: (l.product_uom_qty or 0.0) > 0.0)
+
+            any_line_over_15 = any((l.commission_pct or 0.0) > 15.0 for l in lines)
+            any_line_over_agency = any(
+                (l.commission_pct or 0.0) > (getattr(l.support_id, 'commission_pct', 0.0) or 0.0)
+                for l in lines
+            )
+            over_budget = (o.amount_total or 0.0) > 500000.0
+
+            if any_line_over_15 or over_budget or any_line_over_agency:
+                o.approval_required_level = 'n2'
+            else:
+                o.approval_required_level = 'n1'
+    
+    def action_request_approval(self):
+        """Move draft/sent to 'to_validate' and log the request."""
+        for o in self:
+            if o.state not in ('draft', 'sent'):
+                raise UserError(_("Only draft/sent quotations can be submitted for approval."))
+            o.write({'state': 'to_validate'})
+            o.message_post(body=_("Approval requested (level: %s).") % (o.approval_required_level.upper()))
+        return True
+
+    def action_approve(self):
+        self.ensure_one()
+        o = self
+        if o.state not in ('to_validate', 'to_confirm'):
+            raise UserError(_("This quotation is not awaiting approval."))
+
+        if o.approval_required_level == 'n1':
+            o._require_group("vendor_supports.group_quote_approve_n1")
+            o.message_post(body=_("Approved by N+1. Confirmation executed."))
+            o.action_confirm()
+
+        # N+2 path
+        if o.state == 'to_validate':
+            # First approval must be N+1, then go to 'to_confirm'
+            o._require_group("vendor_supports.group_quote_approve_n1")
+            o.write({'state': 'to_confirm'})
+            o.message_post(body=_("Approved by N+1. Moved to 'To confirm' (awaiting N+2)."))
+            return True
+
+        if o.state == 'to_confirm':
+            # Second approval must be N+2, then confirm
+            o._require_group("vendor_supports.group_quote_approve_n2")
+            o.message_post(body=_("Approved by N+2. Confirmation executed."))
+            o.action_confirm()
+    
+    def _require_group(self, xmlid):
+        if not self.env.user.has_group(xmlid):
+            raise UserError(_("You don't have permission to perform this approval."))
+
+    """@api.onchange('order_line')
     def _onchange_check_support_min_buy(self):
-        """Alerte à l'édition si un Minimum Buy (par support) n'est pas atteint."""
         if not self.order_line:
             return
 
@@ -69,7 +147,7 @@ class SaleOrder(models.Model):
                     'message': "\n".join(alerts),
                 }
             }
-
+        """
     def _check_support_min_buy_or_error(self):
         company = self.company_id or self.env.company
         company_cur = company.currency_id
@@ -99,6 +177,11 @@ class SaleOrder(models.Model):
 
     # ---- Auto-create POs on confirm (keep your existing logic if you have one) ----
     def action_confirm(self):
+        for order in self:
+            if order.approval_required_level == 'n1' and order.state not in ('to_validate','draft','sent'):
+                raise UserError(_("Le devis doit être en état 'À valider' pour une confirmation N+1."))
+            if order.approval_required_level == 'n2' and order.state != 'to_confirm':
+                raise UserError(_("Le devis doit être en état 'À confirmer' pour une confirmation N+2."))
         res = super().action_confirm()
         for order in self:
             order._check_support_min_buy_or_error()

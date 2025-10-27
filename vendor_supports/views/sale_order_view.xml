@@ -18,6 +18,32 @@
                 </button>
             </xpath>
 
+            <!-- 1) Cacher le bouton "action_confirm" d'origine quand un niveau d'approbation est requis -->
+            <xpath expr="//header/button[@name='action_confirm'][2]" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//header/button[@id='action_confirm']" position="attributes">
+                <attribute name="invisible">state in ('draft','sent','sale')</attribute>
+            </xpath>
+
+            <xpath expr="//header/field[@name='state']" position="replace">
+                <field name="state" widget="statusbar"
+                    statusbar_visible="draft,to_validate,to_confirm,sale"/>
+            </xpath>
+
+            <xpath expr="//header" position="inside">
+                <!-- Soumettre au circuit d'approbation -->
+                <button name="action_request_approval" string="Soumettre à validation"
+                        type="object" class="btn-secondary"
+                        invisible= "state not in ('draft','sent') or approval_required_level == 'none'" />
+
+                <!-- Approuver N+2 (ne s'affiche que si N+2 est requis) -->
+                <button name="action_approve" string="Approuver"
+                        type="object" class="btn-primary"
+                        groups="vendor_supports.group_quote_approve_n2"
+                        invisible="state in ('draft','sent','to_confirm','sale')"/>
+            </xpath>
+
             <xpath expr="//button[@name='action_view_purchase_orders']" position="attributes">
                 <attribute name="invisible">True</attribute>
             </xpath>
