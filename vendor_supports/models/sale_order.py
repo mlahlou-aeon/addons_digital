@@ -175,6 +175,21 @@ class SaleOrder(models.Model):
                     "Minimum de commande par support non atteint :\n" + "\n".join(errors)
                 )
 
+    def _confirmation_error_message(self):
+        """ Return whether order can be confirmed or not if not then returm error message. """
+        self.ensure_one()
+        if self.state not in {'draft', 'sent','to_validate','to_confirm'}:
+            return _("Some orders are not in a state requiring confirmation.")
+        if any(
+            not line.display_type
+            and not line.is_downpayment
+            and not line.product_id
+            for line in self.order_line
+        ):
+            return _("A line on these orders missing a product, you cannot confirm it.")
+
+        return False
+        
     # ---- Auto-create POs on confirm (keep your existing logic if you have one) ----
     def action_confirm(self):
         for order in self:
