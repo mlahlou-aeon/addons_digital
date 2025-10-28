@@ -189,7 +189,7 @@ class SaleOrder(models.Model):
             return _("A line on these orders missing a product, you cannot confirm it.")
 
         return False
-        
+
     # ---- Auto-create POs on confirm (keep your existing logic if you have one) ----
     def action_confirm(self):
         for order in self:
@@ -507,10 +507,20 @@ class SaleOrderLine(models.Model):
             self.support_id = self.available_support_ids[:1]
 
 
-    @api.depends('product_id', 'company_id', 'currency_id', 'product_uom')
+    @api.depends('product_template_id', 'company_id', 'currency_id', 'product_uom')
     def _compute_purchase_price(self):
         for line in self:
-            if not line.product_id:
+            if not line.product_template_id:
                 line.purchase_price = 0.0
                 continue
-            line.purchase_price = line.product_id.standard_price
+            line = line.with_company(line.company_id)
+
+            # Convert the cost to the line UoM
+            product_cost = line.product_template_id.uom_id._compute_price(
+                line.product_template_id.standard_price,
+                line.product_uom,
+            )
+
+            line.purchase_price = line._convert_to_sol_currency(
+                product_cost,
+                line.product_template_id.cost_currency_id)
