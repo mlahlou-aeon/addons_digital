@@ -27,7 +27,8 @@ class ProductTemplate(models.Model):
         store=True
     )
 
-    platforme = fields.Char("Platforme")
+    platforme = fields.Many2one("utm.source","Platforme")
+    sub_category = fields.Many2one("product.category","Sous-catégorie",domain=[('parent_id', '!=', False)],context={'hierarchical_naming': False})
 
     @api.depends('seller_ids.support_id')
     def _compute_has_support_vendor(self):

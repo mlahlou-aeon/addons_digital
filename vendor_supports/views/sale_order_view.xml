@@ -23,7 +23,7 @@
                 <attribute name="invisible">1</attribute>
             </xpath>
             <xpath expr="//header/button[@id='action_confirm']" position="attributes">
-                <attribute name="invisible">state in ('draft','sent','sale')</attribute>
+                <attribute name="invisible">state in ('draft','min_buy','sent','sale')</attribute>
             </xpath>
 
             <xpath expr="//header/field[@name='state']" position="replace">
@@ -41,7 +41,12 @@
                 <button name="action_approve" string="Approuver"
                         type="object" class="btn-primary"
                         groups="vendor_supports.group_quote_approve_n2"
-                        invisible="state in ('draft','sent','to_confirm','sale')"/>
+                        invisible="state in ('draft','min_buy','sent','to_confirm','sale')"/>
+                <button name="action_request_approval"
+                        string="Soumettre"
+                        type="object" class="oe_highlight"
+                        invisible="state!= 'min_buy'"
+                        groups="vendor_supports.group_min_buy_approver"/>
             </xpath>
 
             <xpath expr="//button[@name='action_view_purchase_orders']" position="attributes">

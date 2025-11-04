@@ -30,7 +30,6 @@ class PurchaseOrderLine(models.Model):
         """Restrict supports by both product (variant or template) and the PO vendor."""
         lines = self.filtered(lambda l: l.product_id and l.order_id.partner_id)
         others = self - lines
-        # Default for lines without enough context
         for l in others:
             l.available_support_ids = False
             l.has_available_supports = False
@@ -38,7 +37,6 @@ class PurchaseOrderLine(models.Model):
         if not lines:
             return
 
-        # Batch query supplierinfo once
         SupplierInfo = self.env['product.supplierinfo']
         prod_ids = lines.mapped('product_id').ids
         tmpl_ids = lines.mapped('product_id.product_tmpl_id').ids
@@ -51,7 +49,6 @@ class PurchaseOrderLine(models.Model):
                  ('product_tmpl_id', 'in', tmpl_ids),
         ])
 
-        # Index supports by (variant, vendor) and (template, vendor)
         by_variant_vendor = {}
         by_template_vendor = {}
         for si in sis:
@@ -71,7 +68,6 @@ class PurchaseOrderLine(models.Model):
             l.available_support_ids = [(6, 0, list(s_ids))]
             l.has_available_supports = bool(s_ids)
 
-            # Drop invalid support if product/vendor changed
             if l.support_id and l.support_id.id not in s_ids:
                 l.support_id = False
 

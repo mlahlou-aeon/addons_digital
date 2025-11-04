@@ -3,3 +3,4 @@ access_vendor_support,vendor.support,model_vendor_support,vendor_supports.group_
 access_vendor_support_free_tier,vendor.support.free.tier,model_vendor_support_free_tier,base.group_user,1,1,1,1
 access_sale_client_po_confirm_wizard_user,sale.client.po.wizard,model_sale_client_po_wizard,base.group_user,1,1,1,1
 access_vendor_support_category,vendor.support.category,model_vendor_support_category,base.group_user,1,1,1,1
+access_sale_min_buy_wizard,sale.min.buy.wizard,model_sale_min_buy_wizard,base.group_user,1,1,1,1

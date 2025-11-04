@@ -17,17 +17,15 @@
                     </group>
                 </group> 
             </xpath>
-            <xpath expr="//field[@name='default_code']" position="attributes">
-                <attribute name="invisible">True</attribute>
-            </xpath>
+            
             <xpath expr="//field[@name='categ_id']" position="attributes">
                 <attribute name="invisible">True</attribute>
             </xpath>
-            <xpath expr="//field[@name='product_tooltip']" position="after">
-                <field name="default_code"/>
-                <field name="categ_id"/>
+            <xpath expr="//field[@name='active']" position="after">
                 <field name="product_kind"/>
                 <field name="platforme" invisible="product_kind != 'international'"/>
+                <field name="categ_id" domain="[('parent_id', '=', False)]"/>
+                <field name="sub_category" />  
             </xpath>
 
             <xpath expr="//div[@name='list_price_uom']" position="after">
