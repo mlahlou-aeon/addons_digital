@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
+    <record id="action_product_linked_to_support" model="ir.actions.act_window">
+        <field name="name">Linked Products</field>
+        <field name="res_model">product.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('seller_ids.support_id', '=', active_id)]</field>
+        <field name="context">{}</field>
+    </record>
     <!-- Action & Menu -->
     <record id="action_vendor_support" model="ir.actions.act_window">
         <field name="name">Support</field>
@@ -64,7 +71,17 @@
         <field name="model">vendor.support</field>
         <field name="arch" type="xml">
             <form string="Support">
+                <header>
+                    <button name="open_product_template_form" type="object" string="Créer produit" class="btn-primary"/>
+                </header>
                 <sheet>
+                    <div name="button_box">
+                        <button name="%(action_product_linked_to_support)d" type="action" class="oe_stat_button" icon="fa-external-link">
+                            <span class="o_stat_value">
+                                <field name="product_count" widget="statinfo"/>
+                            </span>
+                        </button>
+                    </div>
                     <group>
                         <group string="Informations générales">
                             <field name="name" string="Nom"/>

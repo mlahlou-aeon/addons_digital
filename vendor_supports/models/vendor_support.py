@@ -50,6 +50,18 @@ class VendorSupport(models.Model):
     minimum_buy_amount = fields.Monetary('Minimum Buy', currency_field='currency_id')
     contact_ids = fields.Many2many('res.partner', 'vendor_support_contact_rel', 'support_id', 'partner_id', string='Related Contacts')
     support_color = fields.Integer('Color Index')
+    product_count = fields.Integer(
+        string='Produits', 
+        compute='_compute_product_count',
+        store=True
+    )
+
+    def _compute_product_count(self):
+        """ Compute the number of products linked to this vendor support """
+        for support in self:
+            support.product_count = self.env['product.supplierinfo'].search_count([
+                ('support_id', '=', support.id)
+            ])
 
     _sql_constraints = [
         ('seg_pct_valid', 'CHECK(seg_mobile_pct >= 0 AND seg_desktop_pct >= 0 AND seg_mobile_pct <= 100 AND seg_desktop_pct <= 100)', 'Segmentation percentages must be between 0 and 100.'),
@@ -63,6 +75,27 @@ class VendorSupport(models.Model):
             if rec.seg_mobile_pct and rec.seg_desktop_pct:
                 if abs((rec.seg_mobile_pct + rec.seg_desktop_pct) - 100.0) > 0.5:
                     raise ValidationError(_('Mobile + Desktop percentages should be about 100%.'))
+    
+    def open_product_template_form(self):
+        """Open the product.template form as a modal (wizard)"""
+
+        supplier_support_data = [(0, 0, {
+            'partner_id': self.partner_id.id,
+            'support_id': self.id,
+        })]
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Produit',
+            'res_model': 'product.template',
+            'view_mode': 'form',
+            'view_type': 'form',
+            'res_id': False,
+            'target': 'new',
+            'context': {
+                'default_seller_ids': supplier_support_data,
+                'default_name': self.name},
+        }
 
 
 class VendorSupportFreeTier(models.Model):

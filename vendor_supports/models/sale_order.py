@@ -502,3 +502,5 @@ class SaleOrderLine(models.Model):
             line.purchase_price = line._convert_to_sol_currency(
                 product_cost,
                 line.product_template_id.cost_currency_id)
+            
+        
