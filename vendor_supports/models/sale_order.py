@@ -170,7 +170,7 @@ class SaleOrder(models.Model):
                 if not line.support_id:
                     continue
                 amount_company = line.currency_id._convert(
-                    line.price_total, company_cur, order.company_id,
+                    line.price_subtotal, company_cur, order.company_id,
                     order.date_order or fields.Date.context_today(order)
                 )
                 cumuls[line.support_id] += amount_company
