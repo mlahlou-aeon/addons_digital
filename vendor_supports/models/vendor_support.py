@@ -94,7 +94,8 @@ class VendorSupport(models.Model):
             'target': 'new',
             'context': {
                 'default_seller_ids': supplier_support_data,
-                'default_name': self.name},
+                'default_name': self.name,
+                'default_product_kind': 'external'},
         }
 
 

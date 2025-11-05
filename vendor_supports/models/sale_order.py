@@ -399,12 +399,10 @@ class SaleOrderLine(models.Model):
 
     support_id = fields.Many2one(
         'vendor.support',
-        string='Support',
-        domain="[('id', 'in', available_support_ids)]",
         help="Support available for the selected product.",
     )
     commission_pct = fields.Float('Commission',compute='_compute_commission_pct',store=True,)
-    available_support_ids = fields.Many2many(
+    """available_support_ids = fields.Many2many(
         'vendor.support',
         compute='_compute_available_supports',
         string='Available Supports',
@@ -412,7 +410,7 @@ class SaleOrderLine(models.Model):
     )
     has_available_supports = fields.Boolean(
         compute='_compute_available_supports',
-    )
+    )"""
 
     public_price = fields.Float(
     related='product_id.product_tmpl_id.public_price',
@@ -440,7 +438,7 @@ class SaleOrderLine(models.Model):
 
             line.commission_pct = round(pct, 2) if (cost_company > 0.0) else fallback
 
-    @api.depends('product_id')
+    """@api.depends('product_id')
     def _compute_available_supports(self):
         lines = self.filtered('product_id')
         if not lines:
@@ -483,7 +481,7 @@ class SaleOrderLine(models.Model):
     @api.onchange('product_id')
     def _onchange_product_id_support_prefill(self):
         if self.product_id and self.available_support_ids and len(self.available_support_ids) == 1:
-            self.support_id = self.available_support_ids[:1]
+            self.support_id = self.available_support_ids[:1]"""
 
 
     @api.depends('product_template_id', 'company_id', 'currency_id', 'product_uom')

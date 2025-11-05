@@ -60,9 +60,11 @@
 
         <!-- Column in the order lines tree, after product -->
             <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
-                <field name="support_id"
-                    invisible="not has_available_supports"
-                    domain="[('id','in', available_support_ids)]"/>
+                <field name="support_id"/>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']" position="attributes">
+                <attribute name="domain">[('seller_ids.support_id', '=', support_id)]</attribute>
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='qty_delivered']" position="attributes">
@@ -86,9 +88,7 @@
             
  
             <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="after">
-                <field name="support_id"
-                    invisible="not has_available_supports"
-                    domain="[('id','in', available_support_ids)]"/>
+                <field name="support_id"/>
             </xpath>
 
         </field>
