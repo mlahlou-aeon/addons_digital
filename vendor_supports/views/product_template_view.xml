@@ -23,7 +23,6 @@
             </xpath>
             <xpath expr="//field[@name='active']" position="after">
                 <field name="product_kind"/>
-                <field name="platforme" invisible="product_kind != 'international'"/>
                 <field name="categ_id" domain="[('parent_id', '=', False)]"/>
                 <field name="sub_category" />  
             </xpath>
