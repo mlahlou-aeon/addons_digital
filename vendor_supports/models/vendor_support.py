@@ -59,8 +59,8 @@ class VendorSupport(models.Model):
     def _compute_product_count(self):
         """ Compute the number of products linked to this vendor support """
         for support in self:
-            support.product_count = self.env['product.supplierinfo'].search_count([
-                ('support_id', '=', support.id)
+            support.product_count = self.env['product.template'].search_count([
+                ('seller_ids.support_id', '=', support.id)
             ])
 
     _sql_constraints = [
@@ -95,7 +95,10 @@ class VendorSupport(models.Model):
             'context': {
                 'default_seller_ids': supplier_support_data,
                 'default_name': self.name,
-                'default_product_kind': 'external'},
+                'default_product_kind': 'external',
+                'default_type':'service'
+                'default_categ_id': self.env.ref('vendor_supports.product_category_premium', raise_if_not_found=False).id
+                },
         }
 
 

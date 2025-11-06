@@ -41,7 +41,7 @@
                 <button name="action_approve" string="Approuver"
                         type="object" class="btn-primary"
                         groups="vendor_supports.group_quote_approve_n2"
-                        invisible="state in ('draft','min_buy','sent','to_confirm','sale')"/>
+                        invisible="state in ('draft','min_buy','sent','to_confirm','sale') or approval_required_level=='n1'"/>
                 <button name="action_request_approval"
                         string="Soumettre"
                         type="object" class="oe_highlight"
@@ -55,6 +55,7 @@
 
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="start_date" widget="daterange" options='{"end_date_field": "end_date", "always_range": "1"}'/>
+                <field name="opportunity_id"/>
                 <field name="approval_required_level" invisible="1" />
             </xpath>
 

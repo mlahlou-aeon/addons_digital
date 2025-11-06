@@ -126,7 +126,7 @@ class SaleOrder(models.Model):
         for o in self:
             lines = o.order_line.filtered(lambda l: (l.product_uom_qty or 0.0) > 0.0)
 
-            any_line_over_15 = any((l.commission_pct or 0.0) > 15.0 for l in lines)
+            any_line_over_15 = any((l.commission_pct or 0.0) < 15.0 for l in lines)
             any_line_over_agency = any(
                 (l.commission_pct or 0.0) > (getattr(l.support_id, 'commission_pct', 0.0) or 0.0)
                 for l in lines
