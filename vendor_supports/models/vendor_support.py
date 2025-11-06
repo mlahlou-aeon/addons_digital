@@ -96,7 +96,7 @@ class VendorSupport(models.Model):
                 'default_seller_ids': supplier_support_data,
                 'default_name': self.name,
                 'default_product_kind': 'external',
-                'default_type':'service'
+                'default_type':'service',
                 'default_categ_id': self.env.ref('vendor_supports.product_category_premium', raise_if_not_found=False).id
                 },
         }
