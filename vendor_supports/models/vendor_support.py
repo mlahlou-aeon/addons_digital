@@ -55,6 +55,7 @@ class VendorSupport(models.Model):
         compute='_compute_product_count',
         store=True
     )
+    
     product_template_ids = fields.One2many('product.template','support_id')
 
     def _compute_product_count(self):
