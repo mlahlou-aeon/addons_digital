@@ -1,12 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <!-- Add Support on SO lines (tree + form) -->
+    <record id="sale_order_tree_no_create" model="ir.ui.view">
+        <field name="name">sale.order.tree.no.create</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.sale_order_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="create">false</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_order_form_inherit_support" model="ir.ui.view">
         <field name="name">sale.order.form.support.field</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.view_order_form"/>
         <field name="arch" type="xml">
-        
+
+            <xpath expr="//form" position="attributes">
+                <attribute name="create">0</attribute>
+            </xpath>
+
             <xpath expr="//sheet/div[hasclass('oe_button_box')]" position="inside">
                 <button class="oe_stat_button" name="action_open_purchase_order" type="object" icon="fa-credit-card">
                     <div class="o_field_widget o_stat_info">
@@ -18,7 +32,6 @@
                 </button>
             </xpath>
 
-            <!-- 1) Cacher le bouton "action_confirm" d'origine quand un niveau d'approbation est requis -->
             <xpath expr="//header/button[@name='action_confirm'][2]" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
@@ -32,12 +45,10 @@
             </xpath>
 
             <xpath expr="//header" position="inside">
-                <!-- Soumettre au circuit d'approbation -->
                 <button name="action_request_approval" string="Soumettre à validation"
                         type="object" class="btn-secondary"
                         invisible= "state not in ('draft','sent') or approval_required_level == 'none'" />
 
-                <!-- Approuver N+2 (ne s'affiche que si N+2 est requis) -->
                 <button name="action_approve" string="Approuver"
                         type="object" class="btn-primary"
                         groups="vendor_supports.group_quote_approve_n2"
