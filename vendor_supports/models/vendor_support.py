@@ -55,33 +55,17 @@ class VendorSupport(models.Model):
         compute='_compute_product_count',
         store=True
     )
-    
     product_template_ids = fields.One2many('product.template','support_id')
-
-    def _compute_product_count(self):
-        SupplierInfo = self.env['product.supplierinfo'].sudo()
-        # On groupe par support_id ET product_tmpl_id pour obtenir chaque couple unique
-        rows = SupplierInfo.read_group(
-            [('support_id', 'in', self.ids)],
-            ['support_id', 'product_tmpl_id'],
-            ['support_id', 'product_tmpl_id'],
-            lazy=False,
-        )
-        # Agrégation en sets pour compter les templates uniques par support
-        by_support = {}
-        for r in rows:
-            supp_id = r['support_id'][0]
-            tmpl_id = r['product_tmpl_id'][0]
-            by_support.setdefault(supp_id, set()).add(tmpl_id)
-
-        for support in self:
-            support.product_count = len(by_support.get(support.id, set()))
 
     _sql_constraints = [
         ('seg_pct_valid', 'CHECK(seg_mobile_pct >= 0 AND seg_desktop_pct >= 0 AND seg_mobile_pct <= 100 AND seg_desktop_pct <= 100)', 'Segmentation percentages must be between 0 and 100.'),
         ('bounce_rate_valid', 'CHECK(bounce_rate >= 0 AND bounce_rate <= 100)', 'Bounce rate must be between 0 and 100.'),
         ('commission_valid', 'CHECK(commission_pct >= 0 AND commission_pct <= 100)', 'Commission must be between 0 and 100.'),
     ]
+
+    def _compute_support_count(self):
+        for support in self:
+            support.support_count = len(support.product_template_ids)
 
     @api.constrains('seg_mobile_pct', 'seg_desktop_pct')
     def _check_segmentation_sum(self):
