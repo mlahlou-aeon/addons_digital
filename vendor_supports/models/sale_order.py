@@ -317,6 +317,23 @@ class SaleOrderLine(models.Model):
         index=True,
     )
 
+    def _ensure_slot_after_line(self):
+        """
+        Make sure there is a free sequence slot right after `self.sequence`.
+        Bumps later lines by +1 so we can insert at self.sequence + 1.
+        """
+        self.ensure_one()
+        order = self.order_id
+        base = int(self.sequence or 0)
+
+        # Lines to shift: any non-display line with sequence >= base+1 (except our own free line)
+        lines_to_shift = order.order_line.filtered(
+            lambda l: not l.display_type and not l.is_free_line and l.id != self.id and int(l.sequence or 0) >= base + 1
+        )
+        if lines_to_shift:
+            # Shift in one write for performance
+            for l in lines_to_shift:
+                l.sequence = int(l.sequence or 0) + 1
 
     @api.onchange('product_id', 'product_uom_qty', 'support_id')
     def _onchange_support_free_services(self):
@@ -375,6 +392,16 @@ class SaleOrderLine(models.Model):
             # qty change
             if float(free_line.product_uom_qty) != float(values['product_uom_qty']):
                 update_vals['product_uom_qty'] = values['product_uom_qty']
+            
+            desired_seq = int(self.sequence or 0) + 1
+            if int(free_line.sequence or 0) != desired_seq:
+                # if another line already occupies desired_seq, bump a slot
+                conflict = self.order_id.order_line.filtered(
+                    lambda l: l.id != free_line.id and not l.display_type and int(l.sequence or 0) == desired_seq
+                )
+                if conflict:
+                    self._ensure_slot_after_line()
+                update_vals['sequence'] = desired_seq
 
             # always enforce free price/discount
             update_vals['price_unit'] = 0.0
@@ -383,9 +410,9 @@ class SaleOrderLine(models.Model):
             if update_vals:
                 free_line.with_context(no_free_goods=True).write(update_vals)
         else:
-            self.with_context(no_free_goods=True).order_id.write({
-                'order_line': [(0, 0, values)]
-            })
+            self._ensure_slot_after_line()
+            values['sequence'] = int(self.sequence or 0) + 1
+            self.with_context(no_free_goods=True).order_id.write({'order_line': [(0, 0, values)]})
 
     def _remove_existing_free_line(self):
         free_line = self._get_existing_free_line()
