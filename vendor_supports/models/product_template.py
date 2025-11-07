@@ -89,7 +89,7 @@ class ProductTemplate(models.Model):
             p.margin_pct = ((p.list_price or 0.0) and ((p.list_price - (p.standard_price or 0.0)) / (p.list_price or 1.0) * 100.0)) or 0.0
     
     @api.depends('public_price', 'support_id', 'support_id.commission_pct')
-    def _compute_cost_from_public(self):"
+    def _compute_cost_from_public(self):
         for t in self:
             if t.support_id:
                 pct = t.support_id.commission_pct or 0.0
