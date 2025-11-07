@@ -35,6 +35,7 @@
             <xpath expr="//field[@name='supplier_taxes_id']" position="after">
                 <field name="margin_pct" readonly="1" nolabel="0" invisible="product_kind != 'external'"/>
             </xpath>
+            
             <xpath expr="//field[@name='standard_price']" position="attributes">
                 <attribute name="readonly">support_id != False</attribute>
             </xpath>

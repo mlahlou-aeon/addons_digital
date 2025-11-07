@@ -149,6 +149,7 @@
                                 </list>
                             </field>
                         </page>
+                        
                         <field name="product_template_ids" mode="list,form" 
                             context="{'default_type':'service','default_product_kind': 'external','default_support_id':id}">
                             <list editable="bottom">
