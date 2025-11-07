@@ -58,11 +58,23 @@ class VendorSupport(models.Model):
     product_template_ids = fields.One2many('product.template','support_id')
 
     def _compute_product_count(self):
-        """ Compute the number of products linked to this vendor support """
+        SupplierInfo = self.env['product.supplierinfo'].sudo()
+        # On groupe par support_id ET product_tmpl_id pour obtenir chaque couple unique
+        rows = SupplierInfo.read_group(
+            [('support_id', 'in', self.ids)],
+            ['support_id', 'product_tmpl_id'],
+            ['support_id', 'product_tmpl_id'],
+            lazy=False,
+        )
+        # Agrégation en sets pour compter les templates uniques par support
+        by_support = {}
+        for r in rows:
+            supp_id = r['support_id'][0]
+            tmpl_id = r['product_tmpl_id'][0]
+            by_support.setdefault(supp_id, set()).add(tmpl_id)
+
         for support in self:
-            support.product_count = self.env['product.template'].search_count([
-                ('seller_ids.support_id', '=', support.id)
-            ])
+            support.product_count = len(by_support.get(support.id, set()))
 
     _sql_constraints = [
         ('seg_pct_valid', 'CHECK(seg_mobile_pct >= 0 AND seg_desktop_pct >= 0 AND seg_mobile_pct <= 100 AND seg_desktop_pct <= 100)', 'Segmentation percentages must be between 0 and 100.'),
