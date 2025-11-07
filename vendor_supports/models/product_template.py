@@ -19,20 +19,63 @@ class ProductTemplate(models.Model):
     valid_from = fields.Date("Date de début")
     valid_to = fields.Date("Date de fin")
     margin_pct = fields.Float("Marge (%)", compute='_compute_margin', store=False)
-    standard_price = fields.Float(compute='_compute_cost_from_public',inverse='_inverse_standard_price',store=True,readonly=False,)
-
-    has_support_vendor = fields.Boolean(
-        string="Has Support Vendor",
-        compute="_compute_has_support_vendor",
-        store=True
-    )
+    standard_price = fields.Float(compute='_compute_cost_from_public',store=True,readonly=False,compute_sudo=True)
     sub_category = fields.Many2one("product.category","Sous-catégorie",domain=[('parent_id', '!=', False)],context={'hierarchical_naming': False})
+    support_id = fields.Many2one("vendor.support")
 
-    @api.depends('seller_ids.support_id')
-    def _compute_has_support_vendor(self):
-        for t in self:
-            # True if at least one seller has a support_id
-            t.has_support_vendor = any(s.support_id for s in t.seller_ids)
+    @api.model
+    def create(self, vals):
+        support_id = vals.get('support_id') or self.env.context.get('default_support_id')
+        if support_id:
+            support = self.env['vendor.support'].browse(support_id).exists()
+            if support:
+                vals.setdefault('support_id', support.id)
+                vals['categ_id'] = self.env.ref('vendor_supports.product_category_premium').id
+                vals['list_price'] = vals['public_price']
+
+                if not vals.get('seller_ids') and support.partner_id:
+                    vals['seller_ids'] = [(0, 0, {
+                        'partner_id': support.partner_id.id,
+                        'support_id': support.id,
+                    })]
+        return super().create(vals)
+    
+    def _determine_support_from_sellers(self):
+        self.ensure_one()
+        for s in self.seller_ids:
+            if hasattr(s, 'support_id') and s.support_id:
+                return s.support_id
+        for s in self.seller_ids:
+            partner = getattr(s, 'partner_id', False)
+            if partner:
+                supp = self.env['vendor.support'].search([('partner_id', '=', partner.id)], limit=2)
+                if len(supp) == 1:
+                    return supp
+
+        return self.env['vendor.support']  
+    
+    @api.onchange('seller_ids')
+    def _onchange_sync_support_with_sellers(self):
+        for p in self:
+            if not p.seller_ids:
+                p.support_id = False
+            else:
+                new_support = p._determine_support_from_sellers()
+                if new_support:
+                    p.support_id = new_support
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'seller_ids' in vals:
+            for p in self:
+                if not p.seller_ids:
+                    if p.support_id:
+                        p.with_context(allow_cost_write=True).write({'support_id': False})
+                else:
+                    new_support = p._determine_support_from_sellers()
+                    if new_support and p.support_id != new_support:
+                        p.with_context(allow_cost_write=True).write({'support_id': new_support.id})
+        return res
 
     @api.constrains('valid_from', 'valid_to')
     def _check_validity_range(self):
@@ -44,34 +87,15 @@ class ProductTemplate(models.Model):
     def _compute_margin(self):
         for p in self:
             p.margin_pct = ((p.list_price or 0.0) and ((p.list_price - (p.standard_price or 0.0)) / (p.list_price or 1.0) * 100.0)) or 0.0
-
-    def _get_unique_seller(self):
-        self.ensure_one()
-        return self.seller_ids[:1] if self.seller_ids else False
     
-    
-    @api.depends('public_price', 'seller_ids.support_id', 'seller_ids.support_id.commission_pct')
-    def _compute_cost_from_public(self):
-        """If a seller with support exists: cost = public * (1 - pct/100).
-        Else: keep whatever (manual) value was set."""
+    @api.depends('public_price', 'support_id', 'support_id.commission_pct')
+    def _compute_cost_from_public(self):"
         for t in self:
-            if t.has_support_vendor:
-                seller = t._get_unique_seller()
-                support = seller.support_id if seller else False
-                pct = (support.commission_pct or 0.0) if support else 0.0
-
+            if t.support_id:
+                pct = t.support_id.commission_pct or 0.0
                 public = t.public_price or 0.0
                 cost = public * (1.0 - pct / 100.0)
                 t.standard_price = max(cost, 0.0)
                 t.list_price = public
             else:
-                t.standard_price = t.standard_price
-
-    def _inverse_standard_price(self):
-        """Allow manual edits only when there is no support vendor."""
-        for t in self:
-            if t.has_support_vendor:
-                raise UserError(_(
-                    "Le coût est calculé automatiquement à partir du support. "
-                    "Retirez le support ou modifiez la commission pour changer le coût."
-                ))
+                t.list_price = t.public_price

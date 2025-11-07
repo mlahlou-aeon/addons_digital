@@ -55,6 +55,7 @@ class VendorSupport(models.Model):
         compute='_compute_product_count',
         store=True
     )
+    product_template_ids = fields.One2many('product.template','support_id')
 
     def _compute_product_count(self):
         """ Compute the number of products linked to this vendor support """
@@ -77,7 +78,6 @@ class VendorSupport(models.Model):
                     raise ValidationError(_('Mobile + Desktop percentages should be about 100%.'))
     
     def open_product_template_form(self):
-        """Open the product.template form as a modal (wizard)"""
 
         supplier_support_data = [(0, 0, {
             'partner_id': self.partner_id.id,

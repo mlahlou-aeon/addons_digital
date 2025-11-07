@@ -24,19 +24,19 @@
             <xpath expr="//field[@name='product_tooltip']" position="after">
                 <field name="product_kind"/>
                 <field name="categ_id" domain="[('parent_id', '=', False)]"/>
-                <field name="sub_category" />  
+                <field name="sub_category" /> 
+                <field name="support_id" invisible="1" /> 
             </xpath>
 
             <xpath expr="//div[@name='list_price_uom']" position="after">
                 <field name="uom_id" string="Unité" options="{'no_create': True}"/>
                 <field name="public_price" nolabel="0"/>
-                <field name="has_support_vendor" invisible="1"/>
             </xpath>
             <xpath expr="//field[@name='supplier_taxes_id']" position="after">
                 <field name="margin_pct" readonly="1" nolabel="0" invisible="product_kind != 'external'"/>
             </xpath>
             <xpath expr="//field[@name='standard_price']" position="attributes">
-                <attribute name="readonly">has_support_vendor == True</attribute>
+                <attribute name="readonly">support_id != False</attribute>
             </xpath>
 
             <xpath expr="//field[@name='standard_price']" position="attributes">

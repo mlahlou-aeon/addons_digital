@@ -149,6 +149,19 @@
                                 </list>
                             </field>
                         </page>
+                        <field name="product_template_ids" mode="list,form" 
+                            context="{'default_type':'service','default_product_kind': 'external','default_support_id':id}">
+                            <list editable="bottom">
+                                <field name="product_kind" optional="hide"/>
+                                <field name="categ_id" optional="hide"/>
+                                <field name="sub_category" optional="hide"/>  
+                                <field name="name"/>
+                                <field name="uom_id"/>
+                                <field name="public_price"/>
+                                <field name="standard_price" string="Prix d'achat"/>
+                                <field name="margin_pct" string="Commission(%)"/>
+                            </list>
+                        </field>
                     </notebook>
                 </sheet>
                 <chatter/>
