@@ -270,114 +270,6 @@ class SaleOrder(models.Model):
             vendor = seller.partner_id if seller else False
         return vendor, seller
     
-    def _get_support_discount_product(self):
-        Product = self.env['product.product'].sudo()
-        prod = Product.search([('default_code', '=', 'SUPPORT_DISCOUNT')], limit=1)
-        if not prod:
-            prod = Product.create({
-                'name': 'Gratuité',
-                'default_code': 'SUPPORT_DISCOUNT',
-                'type': 'service',
-                'list_price': 0.0,
-                'taxes_id': [(6, 0, [])],
-                'sale_ok': True,
-                'purchase_ok': False,
-            })
-        return prod
-    
-    def _recompute_support_discount_lines(self):
-        for order in self:
-            currency = order.currency_id
-            discount_product = order._get_support_discount_product()
-
-            src_lines = order.order_line.filtered(
-                lambda l: not l.display_type
-                        and not l.is_support_discount_line
-                        and l.support_id
-            )
-
-            by_support = defaultdict(list)
-            for l in src_lines:
-                by_support[l.support_id].append(l)
-
-            existing = {}
-            for l in order.order_line.filtered(lambda l: l.is_support_discount_line and not l.display_type):
-                key = (l.support_id.id, l.name)
-                existing[key] = l
-
-            supports_seen = set()
-
-            for support, lines in by_support.items():
-                supports_seen.add(support.id)
-
-                total_qty = sum(l.product_uom_qty for l in lines)
-                tiers = support.free_tier_ids.filtered(lambda t: total_qty >= (t.min_qty or 0.0))
-                if tiers:
-                    best = tiers.sorted(key=lambda t: t.min_qty)[-1]
-                    rate = (best.free_percent or 0.0) / 100.0
-                else:
-                    rate = 0.0
-
-                desired_map = defaultdict(float)
-                for l in lines:
-                    if rate <= 0 or float_is_zero(l.product_uom_qty, precision_rounding=l.product_uom.rounding):
-                        continue
-                    free_qty = float_round(
-                        l.product_uom_qty * rate,
-                        precision_rounding=l.product_uom.rounding,
-                        rounding_method='DOWN',
-                    )
-                    if not float_is_zero(free_qty, precision_rounding=l.product_uom.rounding):
-                        desired_map[(l.product_id.id, l.product_uom.id)] += free_qty
-
-                desired_keys_for_cleanup = set()
-                for (orig_prod_id, orig_uom_id), desired_free_qty in desired_map.items():
-                    line_name = f"Gratuité {support.display_name}"
-
-                    key = (support.id, line_name)
-                    desired_keys_for_cleanup.add(key)
-                    free_line = existing.get(key)
-
-                    if free_line:
-                        if float_compare(
-                            free_line.product_uom_qty, desired_free_qty,
-                            precision_rounding=free_line.product_uom.rounding
-                        ) != 0:
-                            free_line.with_context(skip_support_discount=True).write({
-                                'product_uom_qty': desired_free_qty,
-                                'name': line_name,
-                                'price_unit': 0.0,
-                                'discount': 0.0,
-                                'tax_id': [(6, 0, [])],
-                            })
-                    else:
-                        order_id = self.env['sale.order'].search([('name','=',order.name)])
-                        self.env['sale.order.line'].with_context(skip_support_discount=True).create({
-                            'order_id': order_id.id,
-                            'product_id': discount_product.id,
-                            'product_uom': orig_uom_id,
-                            'product_uom_qty': desired_free_qty,
-                            'price_unit': 0.0,
-                            'discount': 0.0,
-                            'tax_id': [(6, 0, [])],
-                            'name': line_name,
-                            'is_support_discount_line': True,
-                        })
-
-                for (sup_id, name), line in list(existing.items()):
-                    if sup_id == support.id and (sup_id, name) not in desired_keys_for_cleanup:
-                        line.with_context(skip_support_discount=True).unlink()
-
-            for line in order.order_line.filtered(lambda l: l.is_support_discount_line and not l.display_type):
-                if line.support_id and line.support_id.id not in supports_seen:
-                    line.with_context(skip_support_discount=True).unlink()
-
-    @api.onchange('order_line')
-    def _onchange_support_discount(self):
-        if self.env.context.get('skip_support_discount'):
-            return
-        self._recompute_support_discount_lines()
-    
     @api.constrains('state', 'opportunity_id')
     def _check_single_validated_quote_per_opportunity(self):
         for order in self:
@@ -397,30 +289,187 @@ class SaleOrder(models.Model):
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
 
-    support_id = fields.Many2one(
-        'vendor.support',
-        help="Support available for the selected product.",
-    )
+    support_id = fields.Many2one('vendor.support',string='Support',help="Support available for the selected product.")
     commission_pct = fields.Float('Commission',compute='_compute_commission_pct',store=True,)
-    """available_support_ids = fields.Many2many(
+    available_support_ids = fields.Many2many(
         'vendor.support',
         compute='_compute_available_supports',
         string='Available Supports',
         compute_sudo=True,
     )
-    has_available_supports = fields.Boolean(
-        compute='_compute_available_supports',
-    )"""
 
     public_price = fields.Float(
     related='product_id.product_tmpl_id.public_price',
     string="Prix public",
     store=False, readonly=True
     )
-    is_support_discount_line = fields.Boolean(
-        string='Ligne remise (support)', default=False, copy=False, index=True,
-        help="Ligne de remise générée automatiquement depuis la grille du Support."
+    is_free_line = fields.Boolean(
+        string="Free Line",
+        help="Line automatically created as a free discount (FOC).",
+        default=False,
+        index=True,
     )
+    support_bonus_of_id = fields.Many2one(
+        'sale.order.line',
+        string="Bonus Of",
+        help="If set, this line is the free bonus of the referenced paid line.",
+        ondelete='cascade',
+        index=True,
+    )
+
+
+    @api.onchange('product_id', 'product_uom_qty', 'support_id')
+    def _onchange_support_free_services(self):
+        if self.env.context.get('no_free_goods'):
+            return
+        for line in self:
+            if line.display_type or line.is_free_line:
+                continue
+            line._apply_or_cleanup_free_services_from_support()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        ctx = dict(self.env.context, no_free_goods=True)
+        for line in lines.with_context(ctx):
+            if not line.display_type and not line.is_free_line:
+                line._apply_or_cleanup_free_services_from_support()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        watch = {'product_id', 'product_uom_qty', 'support_id', 'is_free_line'}
+        if watch.intersection(vals.keys()):
+            ctx = dict(self.env.context, no_free_goods=True)
+            for line in self.with_context(ctx):
+                if not line.display_type and not line.is_free_line:
+                    line._apply_or_cleanup_free_services_from_support()
+        return res
+    
+
+    def _apply_or_cleanup_free_services_from_support(self):
+        """Create/update/remove the paired free service line for this paid line based on support tiers."""
+        self.ensure_one()
+        support = self.support_id
+        if not support:
+            self._remove_existing_free_line()
+            return
+
+        free_qty, free_product = self._compute_free_qty_from_tiers(support)
+        if free_qty <= 0:
+            self._remove_existing_free_line()
+            return
+
+        free_line = self._get_existing_free_line()
+        values = self._prepare_free_line_vals(free_product, free_qty)
+
+        if free_line:
+            update_vals = {}
+
+            if free_line.product_id.id != values['product_id']:
+                update_vals['product_id'] = values['product_id']
+                update_vals['product_uom'] = values['product_uom']
+                update_vals['tax_id'] = values['tax_id']
+                update_vals['name'] = values['name']
+
+            # qty change
+            if float(free_line.product_uom_qty) != float(values['product_uom_qty']):
+                update_vals['product_uom_qty'] = values['product_uom_qty']
+
+            # always enforce free price/discount
+            update_vals['price_unit'] = 0.0
+            update_vals['discount'] = 0.0
+
+            if update_vals:
+                free_line.with_context(no_free_goods=True).write(update_vals)
+        else:
+            self.with_context(no_free_goods=True).order_id.write({
+                'order_line': [(0, 0, values)]
+            })
+
+    def _remove_existing_free_line(self):
+        free_line = self._get_existing_free_line()
+        if free_line:
+            free_line.with_context(no_free_goods=True).unlink()
+
+    def _get_existing_free_line(self):
+        self.ensure_one()
+        return self.order_id.order_line.filtered(
+            lambda l: l.is_free_line and l.support_bonus_of_id.id == self.id
+        )[:1]
+
+    def _prepare_free_line_vals(self, product, qty):
+        """Prepare vals for the free service line, mirroring taxes/UoM and analytics."""
+        self.ensure_one()
+        order = self.order_id
+
+        fpos = order.fiscal_position_id
+        taxes = product.taxes_id.filtered(lambda t: t.company_id == order.company_id)
+        taxes = fpos.map_tax(taxes) if fpos else taxes
+
+        # Descriptive name
+        name = "%s\n(%s)" % (
+            product.get_product_multiline_description_sale() or product.display_name,
+            _("Gratuité")
+        )
+
+        vals = {
+            'order_id': order.id,
+            'is_free_line': True,
+            'support_bonus_of_id': self.id,
+            #'support_id': self.support_id.id,
+            'product_id': product.id,
+            'name': name,
+            'product_uom_qty': qty,
+            'product_uom': product.uom_id.id,
+            'price_unit': 0.0,
+            'discount': 0.0,
+            'tax_id': [(6, 0, taxes.ids)],
+        }
+
+        return vals
+
+    def _compute_free_qty_from_tiers(self, support):
+        """
+        Compute free service quantity from tiers.
+
+        Expected schema:
+          support.free_tier_ids  -> one2many to tier model
+            - tier.min_qty       (Float)
+            - tier.free_percent  (Float)  e.g. 10 means +10% of ordered qty
+
+        Rule: pick the tier with the HIGHEST min_qty <= ordered qty.
+        Free qty = ordered_qty * (best_percent / 100), rounded to UoM.
+        The free product is support.free_product_id if set; else the same as the paid line.
+
+        Optional support fields (if present, they are enforced):
+            active (bool), company_id (m2o), date_start/date_end (date)
+        """
+        self.ensure_one()
+
+        tier_lines = getattr(support, 'free_tier_ids', [])
+        free_product = getattr(support, 'free_product_id', None) or self.product_id
+
+        ordered = self.product_uom_qty or 0.0
+        if not tier_lines or ordered <= 0:
+            return 0.0, free_product
+
+        best_min, best_percent = -1.0, 0.0
+        for t in tier_lines:
+            min_qty = getattr(t, 'min_qty', 0.0) or 0.0
+            percent = getattr(t, 'free_percent', 0.0) or 0.0
+            if min_qty <= ordered and min_qty >= best_min and percent > 0.0:
+                best_min, best_percent = float(min_qty), float(percent)
+
+        if best_percent <= 0.0:
+            return 0.0, free_product
+
+        # Free qty rounded with UoM precision
+        uom = self.product_uom or self.product_id.uom_id
+        rounding = uom.rounding or 0.01
+        free_qty = float_round(ordered * (best_percent / 100.0),
+                               precision_rounding=rounding)
+        return (free_qty if free_qty > 0 else 0.0), free_product
 
     @api.depends('price_unit','purchase_price','support_id.commission_pct')
     def _compute_commission_pct(self):
@@ -437,51 +486,6 @@ class SaleOrderLine(models.Model):
             pct = (price - line.purchase_price) / price * 100.0 if price > 0 else 0.0
 
             line.commission_pct = round(pct, 2) if (cost_company > 0.0) else fallback
-
-    """@api.depends('product_id')
-    def _compute_available_supports(self):
-        lines = self.filtered('product_id')
-        if not lines:
-            self.available_support_ids = False
-            self.has_available_supports = False
-            return
-
-        ProductSupplierInfo = self.env['product.supplierinfo']
-        prod_ids = lines.mapped('product_id').ids
-        tmpl_ids = lines.mapped('product_id.product_tmpl_id').ids
-
-        sis = ProductSupplierInfo.search([
-            '|', ('product_id', 'in', prod_ids),
-                 ('product_tmpl_id', 'in', tmpl_ids),
-            ('support_id', '!=', False),
-        ])
-
-        by_variant = {}
-        by_template = {}
-        for si in sis:
-            if si.product_id:
-                by_variant.setdefault(si.product_id.id, set()).add(si.support_id.id)
-            else:
-                by_template.setdefault(si.product_tmpl_id.id, set()).add(si.support_id.id)
-
-        for line in self:
-            if not line.product_id:
-                line.available_support_ids = False
-                line.has_available_supports = False
-                continue
-            s_ids = set()
-            s_ids |= set(by_variant.get(line.product_id.id, set()))
-            s_ids |= set(by_template.get(line.product_id.product_tmpl_id.id, set()))
-            line.available_support_ids = [(6, 0, list(s_ids))]
-            line.has_available_supports = bool(s_ids)
-
-            if line.support_id and line.support_id.id not in s_ids:
-                line.support_id = False
-
-    @api.onchange('product_id')
-    def _onchange_product_id_support_prefill(self):
-        if self.product_id and self.available_support_ids and len(self.available_support_ids) == 1:
-            self.support_id = self.available_support_ids[:1]"""
 
 
     @api.depends('product_template_id', 'company_id', 'currency_id', 'product_uom')
