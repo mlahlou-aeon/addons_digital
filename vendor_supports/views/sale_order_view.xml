@@ -49,15 +49,17 @@
                         type="object" class="btn-secondary"
                         invisible= "state not in ('draft','sent') or approval_required_level == 'none'" />
 
+                <button name="action_request_approval"
+                        string="Soumettre à validation"
+                        type="object" class="oe_highlight"
+                        invisible="state!= 'min_buy'"
+                        groups="vendor_supports.group_min_buy_approver"/>
+                        
                 <button name="action_approve" string="Approuver"
                         type="object" class="btn-primary"
                         groups="vendor_supports.group_quote_approve_n2"
                         invisible="state in ('draft','min_buy','sent','to_confirm','sale') or approval_required_level=='n1'"/>
-                <button name="action_request_approval"
-                        string="Soumettre"
-                        type="object" class="oe_highlight"
-                        invisible="state!= 'min_buy'"
-                        groups="vendor_supports.group_min_buy_approver"/>
+
             </xpath>
 
             <xpath expr="//button[@name='action_view_purchase_orders']" position="attributes">
