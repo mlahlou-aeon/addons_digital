@@ -130,8 +130,8 @@
                                 <field name="commission_pct"/>
                                 <field name="campaign_commitment"/>
                                 <field name="delivery_issues"/>
-                                <field name="blacklisted"/>
                                 <field name="minimum_buy_amount"/>
+                                <field name="blacklisted"/>
                             </group>
                         </page>
                         <page string="Gratuités">
