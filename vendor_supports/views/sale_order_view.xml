@@ -65,8 +65,8 @@
             </xpath>
 
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="start_date" widget="daterange" options='{"end_date_field": "end_date", "always_range": "1"}'/>
                 <field name="opportunity_id"/>
+                <field name="start_date" widget="daterange" options='{"end_date_field": "end_date", "always_range": "1"}'/>
                 <field name="approval_required_level" invisible="1" />
             </xpath>
 
