@@ -10,6 +10,7 @@
         "contacts",
         "purchase",
         "sale",
+        "crm",
         "sale_management",
         "product",
         "sale_margin",

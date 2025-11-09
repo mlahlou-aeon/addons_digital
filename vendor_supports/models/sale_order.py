@@ -212,8 +212,7 @@ class SaleOrder(models.Model):
             return _("Certaines commandes ne sont pas dans un état nécessitant une confirmation.")
         if any(
             not line.display_type
-            and not line.is_downpayment
-            and not line.product_id
+            and not line.product_template_id
             for line in self.order_line
         ):
             return _("Une ligne sur ces commandes manque un produit, vous ne pouvez pas le confirmer.")
