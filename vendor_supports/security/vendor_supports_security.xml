@@ -2,37 +2,30 @@
 <odoo>
     <record id="group_support_manager" model="res.groups">
         <field name="name">Créer les supports</field>
-        <field name="category_id" ref="vendor_supports.module_category_vendor_supports"/>
     </record>
 
     <record id="group_product_creation" model="res.groups">
         <field name="name">Créer les produits</field>
-        <field name="category_id" ref="vendor_supports.module_category_vendor_supports"/>
     </record>
 
     <record id="group_contact_creation" model="res.groups">
         <field name="name">Créer les fournisseurs</field>
-        <field name="category_id" ref="vendor_supports.module_category_vendor_supports"/>
     </record>
 
     <record id="group_purchase_create_only" model="res.groups">
         <field name="name">Création d'achat</field>
-        <field name="category_id" ref="vendor_supports.module_category_vendor_supports"/>
     </record>
 
     <record id="group_quote_approve_n1" model="res.groups">
         <field name="name">Ventes : 1er Validateur</field>
-        <field name="category_id" ref="vendor_supports.module_category_vendor_supports"/>
     </record>
 
     <record id="group_quote_approve_n2" model="res.groups">
         <field name="name">Ventes : 2ᵉ Validateur</field>
-        <field name="category_id" ref="vendor_supports.module_category_vendor_supports"/>
     </record>
 
     <record id="group_min_buy_approver" model="res.groups">
         <field name="name">Approbateur Min Buy</field>
-        <field name="category_id" ref="vendor_supports.module_category_vendor_supports"/>
     </record>
 
 

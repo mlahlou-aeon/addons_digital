@@ -18,7 +18,6 @@
     ],
     "data": [
         "data/support_category_data.xml",
-        "data/module_category.xml",
         "security/vendor_supports_security.xml",
         "security/ir.model.access.csv",
         "views/vendor_support_views.xml",
