@@ -210,11 +210,6 @@ class SaleOrder(models.Model):
         self.ensure_one()
         if self.state not in {'draft', 'sent','to_validate','to_confirm'}:
             return _("Certaines commandes ne sont pas dans un état nécessitant une confirmation.")
-        if any(
-            not line.display_type
-            for line in self.order_line
-        ):
-            return _("Une ligne sur ces commandes manque un produit, vous ne pouvez pas le confirmer.")
 
         return False
 
