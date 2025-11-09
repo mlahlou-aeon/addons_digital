@@ -68,7 +68,7 @@ class ProductTemplate(models.Model):
         res = super().write(vals)
         if 'seller_ids' in vals:
             for p in self:
-                if not p.seller_ids:
+                if not p.seller_ids.support_id:
                     if p.support_id:
                         p.with_context(allow_cost_write=True).write({'support_id': False})
                 else:

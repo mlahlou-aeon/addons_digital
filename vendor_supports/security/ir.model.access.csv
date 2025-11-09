@@ -1,5 +1,6 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_vendor_support,vendor.support,model_vendor_support,vendor_supports.group_support_manager,1,1,1,1
+access_vendor_support_user,vendor.support.user,model_vendor_support,base.group_user,1,0,0,0
 access_vendor_support_free_tier,vendor.support.free.tier,model_vendor_support_free_tier,base.group_user,1,1,1,1
 access_sale_client_po_confirm_wizard_user,sale.client.po.wizard,model_sale_client_po_wizard,base.group_user,1,1,1,1
 access_vendor_support_category,vendor.support.category,model_vendor_support_category,base.group_user,1,1,1,1

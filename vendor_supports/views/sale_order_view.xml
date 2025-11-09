@@ -92,7 +92,7 @@
 
         <!-- Column in the order lines tree, after product -->
             <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
-                <field name="support_id" readonly="state != 'draft' or is_free_line == True"/>
+                <field name="support_id" options="{'no_create': True, 'no_edit': True}" readonly="state != 'draft' or is_free_line == True"/>
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']" position="attributes">
@@ -102,6 +102,7 @@
                       ('seller_ids.support_id', '=', support_id)
                ]</attribute>
                 <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
+                <attribute name="options">{'no_create': True, 'no_edit': True}</attribute>
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='qty_delivered']" position="attributes">
@@ -118,10 +119,16 @@
             <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="attributes">
                 <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
             </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom']" position="attributes">
+                <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="attributes">
+                <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
+            </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="before">
                 <field name="public_price" readonly="1"/>
-                <field name="purchase_price" string="Prix d’achat" />
+                <field name="purchase_price" readonly="1" string="Prix d’achat" />
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="after">

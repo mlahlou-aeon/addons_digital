@@ -61,9 +61,6 @@
             
             <xpath expr="//field[@name='standard_price']" position="attributes">
                 <attribute name="readonly">support_id != False</attribute>
-            </xpath>
-
-            <xpath expr="//field[@name='standard_price']" position="attributes">
                 <attribute name="string">Prix d'achat</attribute>
             </xpath>
 

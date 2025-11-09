@@ -466,14 +466,14 @@ class SaleOrderLine(models.Model):
             'order_id': order.id,
             'is_free_line': True,
             'support_bonus_of_id': self.id,
-            #'support_id': self.support_id.id,
             'product_id': product.id,
             'name': name,
             'product_uom_qty': qty,
             'product_uom': product.uom_id.id,
+            'public_price': 0.0,
             'price_unit': 0.0,
+            'purchase_price': 0.0,
             'discount': 0.0,
-            'tax_id': [(6, 0, taxes.ids)],
         }
 
         return vals

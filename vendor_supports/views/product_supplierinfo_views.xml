@@ -7,7 +7,7 @@
         <field name="inherit_id" ref="product.product_supplierinfo_form_view"/>
         <field name="arch" type="xml">
             <xpath expr="//form/sheet/group" position="inside">
-                <field string="support" name="support_id" placeholder="Select a support linked to this vendor"/>
+                <field string="support" name="support_id" options="{'no_create': True, 'no_edit': True}" placeholder="Select a support linked to this vendor"/>
             </xpath>
         </field>
     </record>
@@ -18,7 +18,7 @@
         <field name="inherit_id" ref="product.product_supplierinfo_tree_view"/>
         <field name="arch" type="xml">
             <xpath expr="//list" position="inside">
-                <field string="Support" name="support_id" domain="[('partner_id', '=', partner_id)]" optional="show"/>
+                <field string="Support" name="support_id" options="{'no_create': True, 'no_edit': True}" domain="[('partner_id', '=', partner_id)]" optional="show"/>
             </xpath>
             <xpath expr="//list/field[@name='min_qty']" position="attributes">
                 <attribute name="column_invisible">True</attribute>
