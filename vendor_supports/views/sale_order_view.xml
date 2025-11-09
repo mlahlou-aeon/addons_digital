@@ -119,7 +119,10 @@
             <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="attributes">
                 <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
             </xpath>
-            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom']" position="attributes">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom'][1]" position="attributes">
+                <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
+            </xpath>
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom'][2]" position="attributes">
                 <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
             </xpath>
             <xpath expr="//field[@name='order_line']/list/field[@name='tax_id']" position="attributes">
