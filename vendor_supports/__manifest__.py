@@ -17,6 +17,8 @@
         "account"
     ],
     "data": [
+        "data/support_category_data.xml",
+        "data/module_category.xml",
         "security/vendor_supports_security.xml",
         "security/ir.model.access.csv",
         "views/vendor_support_views.xml",
@@ -28,7 +30,6 @@
         "views/account_form_view.xml",
         "wizard/bc_client_view.xml",
         "wizard/min_buy_wizard_view.xml",
-        "data/support_category_data.xml",
     ],
     'assets': {
     'web.assets_backend': [
