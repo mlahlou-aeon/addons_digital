@@ -60,11 +60,6 @@ class SaleOrder(models.Model):
 
 
     def action_confirm(self):
-        for order in self:
-            if order.approval_required_level == 'n1' and order.state not in ('to_validate','draft','sent'):
-                raise UserError(_("Le devis doit être en état 'À valider' pour une confirmation N+1."))
-            if order.approval_required_level == 'n2' and order.state != 'to_confirm':
-                raise UserError(_("Le devis doit être en état 'À confirmer' pour une confirmation N+2."))
         res = super().action_confirm()
         for order in self:
             order._create_purchase_orders_from_so()
@@ -218,51 +213,45 @@ class SaleOrder(models.Model):
         PurchaseOrder = self.env["purchase.order"]
         PurchaseOrderLine = self.env["purchase.order.line"]
 
-        grouped = {}
+        created_pos = []
+
         for line in self.order_line:
             if not line.product_id:
                 continue
+            if line.product_id.product_kind != 'external':
+                continue
+
             vendor, seller = self._get_vendor_and_seller_for_line(line)
             if not vendor:
                 continue
-            grouped.setdefault(vendor.id, []).append((line, seller))
 
-        if not grouped:
-            return
-
-        created_pos = []
-        for partner_id, pairs in grouped.items():
-            if line.product_id.product_kind != 'external':
-                continue
-            
-            vendor = self.env["res.partner"].browse(partner_id)
             po = PurchaseOrder.with_company(self.company_id).create({
                 "partner_id": vendor.id,
                 "company_id": self.company_id.id,
                 "origin": self.name,
                 "sale_id": self.id,
             })
-            for so_line, seller in pairs:
-                po_uom = (seller and seller.product_uom_id) or so_line.product_id.uom_po_id or so_line.product_uom_id
-                qty = so_line.product_uom_id._compute_quantity(so_line.product_uom_qty, po_uom)
 
-                taxes = so_line.product_id.supplier_taxes_id.filtered(lambda t: t.company_id == po.company_id)
-                date_planned = fields.Datetime.now()
+            po_uom = (seller and seller.product_uom_id) or line.product_id.uom_po_id or line.product_uom_id
+            qty = line.product_uom_id._compute_quantity(line.product_uom_qty, po_uom)
 
-                PurchaseOrderLine.create({
-                    "order_id": po.id,
-                    "product_id": so_line.product_id.id,
-                    "support_id": so_line.support_id.id,
-                    "name": so_line.name or so_line.product_id.display_name,
-                    "product_qty": qty,
-                    "product_uom_id": po_uom.id,
-                    "price_unit": so_line.purchase_price,
-                    "date_planned": date_planned,
-                    "taxes_id": [(6, 0, taxes.ids)],
-                })
+            taxes = line.product_id.supplier_taxes_id.filtered(lambda t: t.company_id == po.company_id)
+
+            PurchaseOrderLine.create({
+                "order_id": po.id,
+                "product_id": line.product_id.id,
+                "support_id": line.support_id.id,
+                "name": line.name or line.product_id.display_name,
+                "product_qty": qty,
+                "product_uom_id": po_uom.id,
+                "price_unit": line.purchase_price,
+                "tax_ids": [(6, 0, taxes.ids)],
+            })
+
             created_pos.append(po)
             po.button_confirm()
 
+        return created_pos
 
     def _get_vendor_and_seller_for_line(self, line):
         product = line.product_id

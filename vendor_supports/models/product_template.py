@@ -40,6 +40,7 @@ class ProductTemplate(models.Model):
                 if support:
                     vals['support_id'] = support.id
                     vals['categ_id'] = premium_categ_id
+                    vals['type'] = 'service'
                     if 'public_price' in vals and 'list_price' not in vals:
                         vals['list_price'] = vals['public_price']
 
