@@ -96,11 +96,7 @@
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']" position="attributes">
-                <attribute name="domain">['|',
-                 ('product_kind', 'in', ['internal', 'international']),
-                 '&amp;', ('seller_ids.support_id', '!=', False),
-                      ('seller_ids.support_id', '=', support_id)
-               ]</attribute>
+                <attribute name="domain">[('id', 'in', allowed_product_tmpl_ids)]</attribute>
                 <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
                 <attribute name="options">{'no_create': True, 'no_edit': True}</attribute>
             </xpath>

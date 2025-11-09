@@ -315,6 +315,39 @@ class SaleOrderLine(models.Model):
         ondelete='cascade',
         index=True,
     )
+    allowed_product_ids = fields.Many2many(
+        'product.product', compute='_compute_allowed_products', store=False)
+    allowed_product_tmpl_ids = fields.Many2many(
+        'product.template', compute='_compute_allowed_products', store=False)
+
+    @api.depends('support_id')
+    def _compute_allowed_products(self):
+        ProductT = self.env['product.template']
+        ProductP = self.env['product.product']
+
+        for line in self:
+            if line.support_id:
+                # with support -> only products linked to that support
+                tmpl_ids = ProductT.search([
+                    ('seller_ids.support_id', '=', line.support_id.id)
+                ]).ids
+            else:
+                # no support -> all products except kind 'external'
+                tmpl_ids = ProductT.search([
+                    ('product_kind', '!=', 'external')
+                ]).ids
+
+            # set computed lists
+            line.allowed_product_tmpl_ids = [(6, 0, tmpl_ids)]
+            prod_ids = ProductP.search([('product_tmpl_id', 'in', tmpl_ids)]).ids
+            line.allowed_product_ids = [(6, 0, prod_ids)]
+
+            # auto-clear if current selection no longer fits
+            if line.product_id and line.product_id.id not in prod_ids:
+                line.product_id = False
+            if hasattr(line, 'product_template_id') and line.product_template_id and \
+               line.product_template_id.id not in tmpl_ids:
+                line.product_template_id = False
 
     def _ensure_slot_after_line(self):
         """
