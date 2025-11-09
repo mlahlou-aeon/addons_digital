@@ -1,7 +1,7 @@
 {
     "name": "Vendor Supports Management",
     "summary": "Manage supports per supplier",
-    "version": "19.0",
+    "version": "19.0.1.0.0",
     "category": "Purchases",
     "author": "AEON",
     "license": "LGPL-3",
@@ -34,4 +34,7 @@
         'vendor_supports/static/src/xml/sale_onboarding_list_renderer.xml',
     ],
 },
+
+    "installable": True,
+    "application": True
 }
