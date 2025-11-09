@@ -23,22 +23,37 @@ class ProductTemplate(models.Model):
     sub_category = fields.Many2one("product.category","Sous-catégorie",domain=[('parent_id', '!=', False)])
     support_id = fields.Many2one("vendor.support")
 
-    @api.model
-    def create(self, vals):
-        support_id = vals.get('support_id') or self.env.context.get('default_support_id')
-        if support_id:
-            support = self.env['vendor.support'].browse(support_id).exists()
-            if support:
-                vals.setdefault('support_id', support.id)
-                vals['categ_id'] = self.env.ref('vendor_supports.product_category_premium').id
-                vals['list_price'] = vals['public_price']
+    @api.model_create_multi
+    def create(self, vals_list):
+        if isinstance(vals_list, dict):
+            vals_list = [vals_list]
+        default_support = self.env.context.get('default_support_id')
+        default_support_id = getattr(default_support, 'id', default_support) or False
+        premium_categ_id = self.env.ref('vendor_supports.product_category_premium').id
 
-                if not vals.get('seller_ids') and support.partner_id:
-                    vals['seller_ids'] = [(0, 0, {
-                        'partner_id': support.partner_id.id,
-                        'support_id': support.id,
-                    })]
-        return super().create(vals)
+        for vals in vals_list:
+            sid = vals.get('support_id') or default_support_id
+            sid = getattr(sid, 'id', sid)
+
+            if sid:
+                support = self.env['vendor.support'].browse(sid).exists()
+                if support:
+                    vals['support_id'] = support.id
+                    vals['categ_id'] = premium_categ_id
+                    if 'public_price' in vals and 'list_price' not in vals:
+                        vals['list_price'] = vals['public_price']
+
+                    if support.partner_id:
+                        seller_cmd = (0, 0, {
+                            'partner_id': support.partner_id.id,
+                            'support_id': support.id,
+                        })
+                        if vals.get('seller_ids'):
+                            # keep caller's commands and append ours
+                            vals['seller_ids'].append(seller_cmd)
+                        else:
+                            vals['seller_ids'] = [seller_cmd]
+        return super().create(vals_list)
     
     def _determine_support_from_sellers(self):
         self.ensure_one()

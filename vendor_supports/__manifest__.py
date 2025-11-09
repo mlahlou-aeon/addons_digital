@@ -1,15 +1,16 @@
 {
     "name": "Vendor Supports Management",
     "summary": "Manage supports per supplier",
-    "version": "18.0.1.0.0",
+    "version": "19.0.1.0.0",
     "category": "Purchases",
-    "author": "DarbTech Labs",
+    "author": "AEON",
     "license": "LGPL-3",
     "depends": [
         "base",
         "contacts",
         "purchase",
         "sale",
+        "crm",
         "sale_management",
         "product",
         "sale_margin",

@@ -17,6 +17,7 @@
                     <field name="sub_category" optional="show"/>  
                     <field name="uom_id"/>
                     <field name="public_price"/>
+                    <field name="list_price" invisible="1"/>
                     <field name="standard_price" string="Prix d'achat"/>
                     <field name="margin_pct" string="Commission(%)"/>
                 </list>

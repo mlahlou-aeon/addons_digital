@@ -210,13 +210,6 @@ class SaleOrder(models.Model):
         self.ensure_one()
         if self.state not in {'draft', 'sent','to_validate','to_confirm'}:
             return _("Certaines commandes ne sont pas dans un état nécessitant une confirmation.")
-        if any(
-            not line.display_type
-            and not line.is_downpayment
-            and not line.product_id
-            for line in self.order_line
-        ):
-            return _("Une ligne sur ces commandes manque un produit, vous ne pouvez pas le confirmer.")
 
         return False
 
@@ -250,8 +243,8 @@ class SaleOrder(models.Model):
                 "sale_id": self.id,
             })
             for so_line, seller in pairs:
-                po_uom = (seller and seller.product_uom) or so_line.product_id.uom_po_id or so_line.product_uom
-                qty = so_line.product_uom._compute_quantity(so_line.product_uom_qty, po_uom)
+                po_uom = (seller and seller.product_uom_id) or so_line.product_id.uom_po_id or so_line.product_uom_id
+                qty = so_line.product_uom_id._compute_quantity(so_line.product_uom_qty, po_uom)
 
                 taxes = so_line.product_id.supplier_taxes_id.filtered(lambda t: t.company_id == po.company_id)
                 date_planned = fields.Datetime.now()
@@ -262,7 +255,7 @@ class SaleOrder(models.Model):
                     "support_id": so_line.support_id.id,
                     "name": so_line.name or so_line.product_id.display_name,
                     "product_qty": qty,
-                    "product_uom": po_uom.id,
+                    "product_uom_id": po_uom.id,
                     "price_unit": so_line.purchase_price,
                     "date_planned": date_planned,
                     "taxes_id": [(6, 0, taxes.ids)],
@@ -279,7 +272,7 @@ class SaleOrder(models.Model):
             partner_id=vendor,
             quantity=line.product_uom_qty,
             date=self.date_order or fields.Date.context_today(self),
-            uom_id=line.product_uom,
+            uom_id=line.product_uom_id,
         )
         if not vendor:
             vendor = seller.partner_id if seller else False
@@ -448,7 +441,7 @@ class SaleOrderLine(models.Model):
 
             if free_line.product_id.id != values['product_id']:
                 update_vals['product_id'] = values['product_id']
-                update_vals['product_uom'] = values['product_uom']
+                update_vals['product_uom_id'] = values['product_uom_id']
                 update_vals['name'] = values['name']
 
             # qty change
@@ -509,7 +502,7 @@ class SaleOrderLine(models.Model):
             'product_id': product.id,
             'name': name,
             'product_uom_qty': qty,
-            'product_uom': product.uom_id.id,
+            'product_uom_id': product.uom_id.id,
             'public_price': 0.0,
             'price_unit': 0.0,
             'purchase_price': 0.0,
@@ -539,7 +532,7 @@ class SaleOrderLine(models.Model):
             return 0.0, free_product
 
         # Free qty rounded with UoM precision
-        uom = self.product_uom or self.product_id.uom_id
+        uom = self.product_uom_id or self.product_id.uom_id
         rounding = uom.rounding or 0.01
         free_qty = float_round(ordered * (best_percent / 100.0),
                                precision_rounding=rounding)
@@ -562,7 +555,7 @@ class SaleOrderLine(models.Model):
             line.commission_pct = round(pct, 2) if (cost_company > 0.0) else fallback
 
 
-    @api.depends('product_template_id', 'company_id', 'currency_id', 'product_uom')
+    @api.depends('product_template_id', 'company_id', 'currency_id', 'product_uom_id')
     def _compute_purchase_price(self):
         for line in self:
             if not line.product_template_id:
@@ -572,7 +565,7 @@ class SaleOrderLine(models.Model):
 
             product_cost = line.product_template_id.uom_id._compute_price(
                 line.product_template_id.standard_price,
-                line.product_uom,
+                line.product_uom_id,
             )
 
             line.purchase_price = line._convert_to_sol_currency(
