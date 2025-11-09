@@ -1,7 +1,7 @@
 {
     "name": "Vendor Supports Management",
     "summary": "Manage supports per supplier",
-    "version": "18.0.1.0.0",
+    "version": "19.0",
     "category": "Purchases",
     "author": "DarbTech Labs",
     "license": "LGPL-3",
