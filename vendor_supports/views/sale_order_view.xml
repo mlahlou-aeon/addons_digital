@@ -40,13 +40,14 @@
             <xpath expr="//header/button[@name='action_confirm'][2]" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
-            <xpath expr="//header/button[@id='action_confirm']" position="attributes">
-                <attribute name="invisible">state in ('draft','min_buy','sent','sale')</attribute>
-            </xpath>
 
             <xpath expr="//header/field[@name='state']" position="replace">
                 <field name="state" widget="statusbar"
-                    statusbar_visible="draft,to_validate,to_confirm,sale"/>
+                    statusbar_visible="draft,sale"/>
+            </xpath>
+
+            <xpath expr="//header/button[@id='action_confirm']" position="attributes">
+                <attribute name="invisible">state != 'to_confirm'</attribute>
             </xpath>
 
             <xpath expr="//header" position="inside">
@@ -55,7 +56,7 @@
                         invisible= "state not in ('draft','sent') or approval_required_level == 'none'" />
 
                 <button name="action_request_approval"
-                        string="Soumettre à validation"
+                        string="Valider"
                         type="object" class="oe_highlight"
                         invisible="state!= 'min_buy'"
                         groups="vendor_supports.group_min_buy_approver"/>
@@ -68,7 +69,6 @@
                 <button name="action_set_to_draft" string="Reinitlialiser "
                         type="object" class="btn-secondary"
                         invisible= "state in ('draft','sale')" />
-
             </xpath>
 
             <xpath expr="//button[@name='action_view_purchase_orders']" position="attributes">

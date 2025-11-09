@@ -14,7 +14,10 @@ SALE_ORDER_STATE = [
     ('sale', "Commande"),
     ('cancel', "Annulé"),
 ]
-MIN_BUY_GROUP_XMLID = 'vendor_supports.group_min_buy_approver'
+
+GROUP_N1 = "vendor_supports.group_quote_approve_n1"
+GROUP_N2 = "vendor_supports.group_quote_approve_n2"
+MIN_BUY_GROUP_XMLID = "vendor_supports.group_min_buy_approver"
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
@@ -85,21 +88,27 @@ class SaleOrder(models.Model):
     def action_approve(self):
         self.ensure_one()
         o = self
+
         if o.state not in ('to_validate', 'to_confirm'):
             raise UserError(_("Ce devis n’est pas en attente d’approbation."))
 
-        if o.approval_required_level == 'n1':
-            o._require_group("vendor_supports.group_quote_approve_n1")
-            o.action_confirm()
-
         if o.state == 'to_validate':
-            o._require_group("vendor_supports.group_quote_approve_n1")
+            o._require_group(GROUP_N1)
+
+            if o.approval_required_level == 'n1':
+                return o.action_confirm()
             o.write({'state': 'to_confirm'})
+            o.message_post(body=_("Approbation N1 effectuée. Passage à l'approbation N2."))
             return True
 
         if o.state == 'to_confirm':
-            o._require_group("vendor_supports.group_quote_approve_n2")
-            o.action_confirm()
+            if o.approval_required_level == 'n1':
+                o._require_group(GROUP_N1)
+            else:
+                o._require_group(GROUP_N2)
+            return o.action_confirm()
+
+        raise UserError(_("État d’approbation non géré."))
 
     def action_request_approval(self):
         for o in self:
@@ -109,18 +118,23 @@ class SaleOrder(models.Model):
                     return o._open_min_buy_wizard(
                         "Minimum de commande par support non atteint :\n" + "\n".join(errors)
                     )
-                o.write({'state': 'to_validate'})
-                o.message_post(body=_("Approval requested (level: %s).") % (o.approval_required_level.upper()))
+                if o.approval_required_level == 'n1':
+                    o.write({'state': 'to_confirm'})
+                    o.message_post(body=_("Demande d’approbation (N1 uniquement)."))
+                else:
+                    o.write({'state': 'to_validate'})
+                    o.message_post(body=_("Demande d’approbation (N1 puis N2)."))
                 continue
 
             if o.state == 'min_buy':
                 if self.env.user.has_group(MIN_BUY_GROUP_XMLID):
-                    o.write({'state': 'to_validate'})
+                    next_state = 'to_confirm' if o.approval_required_level == 'n1' else 'to_validate'
+                    o.write({'state': next_state})
                     continue
                 raise UserError(_("Cette commande est en 'Validation Min Buy'. "
-                                "Seul un approbateur Min Buy peut la soumettre en 'À valider'."))
+                                  "Seul un approbateur Min Buy peut la soumettre en 'À valider'."))
 
-            raise UserError(_("Seuls les devis en brouillons/envoyés peuvent être soumis pour approbation."))
+            raise UserError(_("Seuls les devis en brouillon/envoyés peuvent être soumis pour approbation."))
         return True
 
     @api.depends(
@@ -130,16 +144,11 @@ class SaleOrder(models.Model):
     )
     def _compute_approval_required_level(self):
         for o in self:
-            lines = o.order_line.filtered(lambda l: (l.product_uom_qty or 0.0) > 0.0)
+            lines = o.order_line.filtered(lambda l: (l.product_uom_qty or 0.0) > 0.0 and not l.is_free_line)
 
-            any_line_over_15 = any((l.commission_pct or 0.0) < 15.0 for l in lines)
-            any_line_over_agency = any(
-                (l.commission_pct or 0.0) > (getattr(l.support_id, 'commission_pct', 0.0) or 0.0)
-                for l in lines
-            )
-            over_budget = (o.amount_total or 0.0) > 500000.0
-
-            if any_line_over_15 or over_budget or any_line_over_agency:
+            any_line_under_15 = any((l.commission_pct or 0.0) < 15.0 for l in lines)
+            over_budget = (o.amount_untaxed or 0.0) > 500000.0
+            if any_line_under_15 or over_budget:
                 o.approval_required_level = 'n2'
             else:
                 o.approval_required_level = 'n1'
@@ -342,7 +351,6 @@ class SaleOrderLine(models.Model):
             prod_ids = ProductP.search([('product_tmpl_id', 'in', tmpl_ids)]).ids
             line.allowed_product_ids = [(6, 0, prod_ids)]
 
-            # auto-clear if current selection no longer fits
             if line.product_id and line.product_id.id not in prod_ids:
                 line.product_id = False
             if hasattr(line, 'product_template_id') and line.product_template_id and \
@@ -441,7 +449,6 @@ class SaleOrderLine(models.Model):
             if free_line.product_id.id != values['product_id']:
                 update_vals['product_id'] = values['product_id']
                 update_vals['product_uom'] = values['product_uom']
-                update_vals['tax_id'] = values['tax_id']
                 update_vals['name'] = values['name']
 
             # qty change
