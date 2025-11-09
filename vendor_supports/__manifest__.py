@@ -3,7 +3,7 @@
     "summary": "Manage supports per supplier",
     "version": "19.0",
     "category": "Purchases",
-    "author": "DarbTech Labs",
+    "author": "AEON",
     "license": "LGPL-3",
     "depends": [
         "base",
@@ -34,7 +34,4 @@
         'vendor_supports/static/src/xml/sale_onboarding_list_renderer.xml',
     ],
 },
-
-    "installable": True,
-    "application": True
 }
