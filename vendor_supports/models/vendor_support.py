@@ -63,9 +63,16 @@ class VendorSupport(models.Model):
         ('commission_valid', 'CHECK(commission_pct >= 0 AND commission_pct <= 100)', 'Commission must be between 0 and 100.'),
     ]
 
-    def _compute_support_count(self):
-        for support in self:
-            support.support_count = len(support.product_template_ids)
+    @api.depends('product_template_ids')
+    def _compute_product_count(self):
+        # Efficient: one grouped query for all records
+        groups = self.env['product.template'].read_group(
+            [('support_id', 'in', self.ids)],
+            ['id'], ['support_id']
+        )
+        counts = {g['support_id'][0]: g['support_id_count'] for g in groups}
+        for rec in self:
+            rec.product_count = counts.get(rec.id, 0)
 
     @api.constrains('seg_mobile_pct', 'seg_desktop_pct')
     def _check_segmentation_sum(self):

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-    <record id="sale_order_tree_no_create" model="ir.ui.view">
-        <field name="name">sale.order.tree.no.create</field>
+
+    <record id="sale_order_tree_upload" model="ir.ui.view">
+        <field name="name">sale.order.tree.upload</field>
         <field name="model">sale.order</field>
         <field name="inherit_id" ref="sale.sale_order_tree"/>
         <field name="arch" type="xml">
@@ -32,6 +33,10 @@
                 </button>
             </xpath>
 
+            <xpath expr="//header/button[@name='action_preview_sale_order']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+
             <xpath expr="//header/button[@name='action_confirm'][2]" position="attributes">
                 <attribute name="invisible">1</attribute>
             </xpath>
@@ -55,10 +60,14 @@
                         invisible="state!= 'min_buy'"
                         groups="vendor_supports.group_min_buy_approver"/>
                         
-                <button name="action_approve" string="Approuver"
+                <button name="action_approve" string="Valider"
                         type="object" class="btn-primary"
                         groups="vendor_supports.group_quote_approve_n2"
                         invisible="state in ('draft','min_buy','sent','to_confirm','sale') or approval_required_level=='n1'"/>
+                
+                <button name="action_set_to_draft" string="Reinitlialiser "
+                        type="object" class="btn-secondary"
+                        invisible= "state in ('draft','sale')" />
 
             </xpath>
 
@@ -67,18 +76,32 @@
             </xpath>
 
             <xpath expr="//field[@name='partner_id']" position="after">
-                <field name="opportunity_id"/>
-                <field name="start_date" widget="daterange" options='{"end_date_field": "end_date", "always_range": "1"}'/>
+                <field name="opportunity_id" readonly="state != 'draft'"/>
+                <field name="start_date" widget="daterange" readonly="state != 'draft'" options='{"end_date_field": "end_date", "always_range": "1"}'/>
                 <field name="approval_required_level" invisible="1" />
+            </xpath>
+            <xpath expr="//field[@name='partner_id']" position="attributes">
+                <attribute name="readonly">state != 'draft'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='pricelist_id']" position="attributes">
+                <attribute name="readonly">state != 'draft'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='date_order']" position="attributes">
+                <attribute name="readonly">state != 'draft'</attribute>
             </xpath>
 
         <!-- Column in the order lines tree, after product -->
             <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
-                <field name="support_id"/>
+                <field name="support_id" readonly="state != 'draft' or is_free_line == True"/>
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='product_template_id']" position="attributes">
-                <attribute name="domain">[('seller_ids.support_id', '=', support_id)]</attribute>
+                <attribute name="domain">['|',
+                 ('product_kind', 'in', ['internal', 'international']),
+                 '&amp;', ('seller_ids.support_id', '!=', False),
+                      ('seller_ids.support_id', '=', support_id)
+               ]</attribute>
+                <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='qty_delivered']" position="attributes">
@@ -89,6 +112,11 @@
             </xpath>
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="attributes">
                 <attribute name="string">Prix de vente</attribute>
+                <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_uom_qty']" position="attributes">
+                <attribute name="readonly">state != 'draft' or is_free_line == True</attribute>
             </xpath>
 
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="before">

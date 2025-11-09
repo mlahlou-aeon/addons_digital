@@ -13,6 +13,7 @@
         "sale_management",
         "product",
         "sale_margin",
+        "account"
     ],
     "data": [
         "security/vendor_supports_security.xml",
@@ -27,6 +28,12 @@
         "wizard/min_buy_wizard_view.xml",
         "data/support_category_data.xml",
     ],
+    'assets': {
+    'web.assets_backend': [
+        'vendor_supports/static/src/xml/sale_onboarding_list_renderer.xml',
+    ],
+},
+
     "installable": True,
     "application": True
 }

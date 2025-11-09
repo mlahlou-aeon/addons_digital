@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+  <t t-name="DocumentViewUploadButton.no_upload"
+     t-inherit="account.DocumentViewUploadButton"
+     t-inherit-mode="extension">
+
+    <!-- Delete the button entirely -->
+    <xpath expr=".//button[contains(@class, 'btn') and normalize-space(text())='Upload']"
+           position="replace"/>
+  </t>
+</templates>

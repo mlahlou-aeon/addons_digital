@@ -12,8 +12,3 @@ access_product_template_creator,access.product.template.creator,model_product_te
 purchase.access_purchase_order_manager,access.purchase.order.manager,model_purchase_order,purchase.group_purchase_manager,1,1,0,0
 purchase.access_purchase_order,access.purchase.order.user,model_purchase_order,purchase.group_purchase_user,1,1,0,0
 access_purchase_order_create_only,access.purchase.order.create.only,model_purchase_order,vendor_supports.group_purchase_create_only,1,1,1,0
-purchase.access_res_partner_purchase_manager,access.res.partner.purchase.manager,model_res_partner,purchase.group_purchase_manager,1,1,0,0
-sale.access_res_partner_sale_manager,access.res.partner.sale.manager,model_res_partner,sales_team.group_sale_manager,1,1,0,0
-base.access_res_partner_group_partner_manager,access.res.partner.group.partner.manager,model_res_partner,base.group_partner_manager,1,1,0,0
-crm.access_res_partner,crm.access.res.partner,model_res_partner,sales_team.group_sale_salesman,1,1,0,0
-access_res_partner_contact_creator,access.res.partner.contact.creator,model_res_partner,vendor_supports.group_contact_creation,1,1,1,0

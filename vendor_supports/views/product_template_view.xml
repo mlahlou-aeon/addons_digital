@@ -47,7 +47,7 @@
             <xpath expr="//field[@name='product_tooltip']" position="after">
                 <field name="product_kind"/>
                 <field name="categ_id" domain="[('parent_id', '=', False)]"/>
-                <field name="sub_category" /> 
+                <field name="sub_category" domain="[('parent_id', '=', categ_id)]" context="{'default_parent_id': categ_id, 'hierarchical_naming': False}"/> 
                 <field name="support_id" invisible="1" /> 
             </xpath>
 

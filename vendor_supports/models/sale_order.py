@@ -65,6 +65,7 @@ class SaleOrder(models.Model):
         res = super().action_confirm()
         for order in self:
             order._create_purchase_orders_from_so()
+            order.opportunity_id.action_set_won_rainbowman()
             if len(order) == 1:
                 return {
                     'name': _('Joindre le BC Client'),
@@ -75,6 +76,11 @@ class SaleOrder(models.Model):
                     'context': {'default_sale_id': order.id},
                 }
         return res
+    
+    def action_set_to_draft(self):
+        for o in self:
+            o.write({'state': 'draft'})
+
     
     def action_approve(self):
         self.ensure_one()
@@ -291,13 +297,6 @@ class SaleOrderLine(models.Model):
 
     support_id = fields.Many2one('vendor.support',string='Support',help="Support available for the selected product.")
     commission_pct = fields.Float('Commission',compute='_compute_commission_pct',store=True,)
-    available_support_ids = fields.Many2many(
-        'vendor.support',
-        compute='_compute_available_supports',
-        string='Available Supports',
-        compute_sudo=True,
-    )
-
     public_price = fields.Float(
     related='product_id.product_tmpl_id.public_price',
     string="Prix public",
@@ -342,7 +341,30 @@ class SaleOrderLine(models.Model):
         for line in self:
             if line.display_type or line.is_free_line:
                 continue
+
+            if line.support_id and line.support_id.blacklisted:
+                msg = _("Le support '%s' est blacklisté et ne peut pas être utilisé.") % line.support_id.display_name
+                line.support_id = False
+                return {'warning': {'title': _("Support blacklisté"), 'message': msg}}
+
+            if line.product_id:
+                product = line.product_id
+                today = fields.Date.today()
+                valid_from = getattr(product, 'valid_from', False)
+                valid_to = getattr(product, 'valid_to', False)
+
+                if (valid_from and today < valid_from) or (valid_to and today > valid_to):
+                    msg = _("Le produit '%s' n'est pas valide à la date du %s.\nPériode de validité : %s → %s") % (
+                        product.display_name,
+                        today.strftime('%d/%m/%Y'),
+                        valid_from.strftime('%d/%m/%Y') if valid_from else '-',
+                        valid_to.strftime('%d/%m/%Y') if valid_to else '-'
+                    )
+                    line.product_id = False
+                    return {'warning': {'title': _("Produit non valide"), 'message': msg}}
+
             line._apply_or_cleanup_free_services_from_support()
+
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -457,21 +479,6 @@ class SaleOrderLine(models.Model):
         return vals
 
     def _compute_free_qty_from_tiers(self, support):
-        """
-        Compute free service quantity from tiers.
-
-        Expected schema:
-          support.free_tier_ids  -> one2many to tier model
-            - tier.min_qty       (Float)
-            - tier.free_percent  (Float)  e.g. 10 means +10% of ordered qty
-
-        Rule: pick the tier with the HIGHEST min_qty <= ordered qty.
-        Free qty = ordered_qty * (best_percent / 100), rounded to UoM.
-        The free product is support.free_product_id if set; else the same as the paid line.
-
-        Optional support fields (if present, they are enforced):
-            active (bool), company_id (m2o), date_start/date_end (date)
-        """
         self.ensure_one()
 
         tier_lines = getattr(support, 'free_tier_ids', [])

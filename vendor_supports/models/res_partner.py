@@ -17,3 +17,17 @@ class ResPartner(models.Model):
         action['domain'] = [('partner_id','=', self.id)]
         action['context'] = {'default_partner_id': self.id}
         return action
+
+class ResGroups(models.Model):
+    _inherit = 'res.groups'
+
+    @api.model
+    def get_application_groups(self, domain):
+
+        product_cre = self.env.ref('product.group_product_manager')
+        contact_cre = self.env.ref('base.group_partner_manager')
+
+        domain += [('id', '!=', product_cre.id)]
+        domain += [('id', '!=', contact_cre.id)]
+
+        return super().get_application_groups(domain)

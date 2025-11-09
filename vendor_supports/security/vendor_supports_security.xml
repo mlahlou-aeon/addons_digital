@@ -9,7 +9,7 @@
     </record>
 
     <record id="group_contact_creation" model="res.groups">
-        <field name="name">Créer les contacts</field>
+        <field name="name">Créer les fournisseurs</field>
     </record>
 
     <record id="group_purchase_create_only" model="res.groups">

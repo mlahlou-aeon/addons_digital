@@ -20,7 +20,7 @@ class ProductTemplate(models.Model):
     valid_to = fields.Date("Date de fin")
     margin_pct = fields.Float("Commission (%)", compute='_compute_margin', store=False)
     standard_price = fields.Float(compute='_compute_cost_from_public',store=True,readonly=False,compute_sudo=True)
-    sub_category = fields.Many2one("product.category","Sous-catégorie",domain=[('parent_id', '!=', False)],context={'hierarchical_naming': False})
+    sub_category = fields.Many2one("product.category","Sous-catégorie",domain=[('parent_id', '!=', False)])
     support_id = fields.Many2one("vendor.support")
 
     @api.model

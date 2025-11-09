@@ -71,9 +71,6 @@
         <field name="model">vendor.support</field>
         <field name="arch" type="xml">
             <form string="Support">
-                <header>
-                    <button name="open_product_template_form" type="object" string="Créer produit" class="btn-primary"/>
-                </header>
                 <sheet>
                     <div name="button_box">
                         <button name="%(action_product_linked_to_support)d" type="action" class="oe_stat_button" icon="fa-external-link">

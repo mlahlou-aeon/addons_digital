@@ -21,14 +21,14 @@ class SaleMinBuyWizard(models.TransientModel):
         ))
 
         # Notify approvers
-        grp = self.env.ref(MIN_BUY_GROUP_XMLID, raise_if_not_found=False)
+        """grp = self.env.ref(MIN_BUY_GROUP_XMLID, raise_if_not_found=False)
         if grp and grp.users:
             for u in grp.users:
                 o.activity_schedule(
                     'mail.mail_activity_data_todo',
                     user_id=u.id,
                     note=_("Commande %s : validation Min Buy requise.") % o.name
-                )
+                )"""
         
         return {'type': 'ir.actions.act_window_close'}
 
