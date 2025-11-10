@@ -266,21 +266,6 @@ class SaleOrder(models.Model):
         if not vendor:
             vendor = seller.partner_id if seller else False
         return vendor, seller
-    
-    @api.constrains('state', 'opportunity_id')
-    def _check_single_validated_quote_per_opportunity(self):
-        for order in self:
-            if order.state == 'sale' and order.opportunity_id:
-                confirmed_orders = self.env['sale.order'].search_count([
-                    ('id', '!=', order.id),
-                    ('opportunity_id', '=', order.opportunity_id.id),
-                    ('state', '=', 'sale')
-                ])
-                if confirmed_orders:
-                    raise ValidationError(_(
-                        "Impossible de valider ce devis : "
-                        "l'opportunité '%s' possède déjà un devis validé."
-                    ) % order.opportunity_id.display_name)
 
 
 class SaleOrderLine(models.Model):
