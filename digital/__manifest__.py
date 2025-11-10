@@ -1,6 +1,6 @@
 {
-    "name": "Vendor Supports Management",
-    "summary": "Manage supports per supplier",
+    "name": "Digital Management",
+    "summary": "Digital Management",
     "version": "19.0.1.0.0",
     "category": "Purchases",
     "author": "AEON",
