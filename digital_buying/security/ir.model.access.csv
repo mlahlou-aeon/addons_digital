@@ -1,5 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_vendor_support,vendor.support,model_vendor_support,digital.group_support_manager,1,1,1,1
+access_vendor_support,vendor.support,model_vendor_support,digital_buying.group_support_manager,1,1,1,1
 access_vendor_support_user,vendor.support.user,model_vendor_support,base.group_user,1,0,0,0
 access_vendor_support_free_tier,vendor.support.free.tier,model_vendor_support_free_tier,base.group_user,1,1,1,1
 access_sale_client_po_confirm_wizard_user,sale.client.po.wizard,model_sale_client_po_wizard,base.group_user,1,1,1,1
@@ -9,7 +9,7 @@ purchase.access_product_template_purchase_manager,access.product.template.purcha
 sale.access_product_template_sale_manager,access.product.template.sale.manager,model_product_template,sales_team.group_sale_manager,1,1,0,0
 account.access_product_template_account_manager,access.product.template.account.manager,model_product_template,account.group_account_manager,1,1,0,0
 product.access_product_template_manager,access.product.template.manager,model_product_template,product.group_product_manager,1,1,0,0
-access_product_template_creator,access.product.template.creator,model_product_template,digital.group_product_creation,1,1,1,0
+access_product_template_creator,access.product.template.creator,model_product_template,digital_buying.group_product_creation,1,1,1,0
 purchase.access_purchase_order_manager,access.purchase.order.manager,model_purchase_order,purchase.group_purchase_manager,1,1,0,0
 purchase.access_purchase_order,access.purchase.order.user,model_purchase_order,purchase.group_purchase_user,1,1,0,0
-access_purchase_order_create_only,access.purchase.order.create.only,model_purchase_order,digital.group_purchase_create_only,1,1,1,0
+access_purchase_order_create_only,access.purchase.order.create.only,model_purchase_order,digital_buying.group_purchase_create_only,1,1,1,0

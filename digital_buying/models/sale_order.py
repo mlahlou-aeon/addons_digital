@@ -15,9 +15,9 @@ SALE_ORDER_STATE = [
     ('cancel', "Annulé"),
 ]
 
-GROUP_N1 = "digital.group_quote_approve_n1"
-GROUP_N2 = "digital.group_quote_approve_n2"
-MIN_BUY_GROUP_XMLID = "digital.group_min_buy_approver"
+GROUP_N1 = "digital_buying.group_quote_approve_n1"
+GROUP_N2 = "digital_buying.group_quote_approve_n2"
+MIN_BUY_GROUP_XMLID = "digital_buying.group_min_buy_approver"
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"

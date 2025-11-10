@@ -59,11 +59,11 @@
                         string="Valider"
                         type="object" class="oe_highlight"
                         invisible="state!= 'min_buy'"
-                        groups="digital.group_min_buy_approver"/>
+                        groups="digital_buying.group_min_buy_approver"/>
                         
                 <button name="action_approve" string="Valider"
                         type="object" class="btn-primary"
-                        groups="digital.group_quote_approve_n2"
+                        groups="digital_buying.group_quote_approve_n2"
                         invisible="state in ('draft','min_buy','sent','to_confirm','sale') or approval_required_level=='n1'"/>
                 
                 <button name="action_set_to_draft" string="Reinitlialiser "

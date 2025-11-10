@@ -13,7 +13,7 @@ class ResPartner(models.Model):
 
     def action_view_vendor_supports(self):
         self.ensure_one()
-        action = self.env.ref('digital.action_vendor_support').read()[0]
+        action = self.env.ref('digital_buying.action_vendor_support').read()[0]
         action['domain'] = [('partner_id','=', self.id)]
         action['context'] = {'default_partner_id': self.id}
         return action

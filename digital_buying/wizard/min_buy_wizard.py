@@ -1,7 +1,7 @@
 # models/sale_min_buy_wizard.py
 from odoo import api, fields, models, _
 
-MIN_BUY_GROUP_XMLID = 'digital.group_min_buy_approver'
+MIN_BUY_GROUP_XMLID = 'digital_buying.group_min_buy_approver'
 
 class SaleMinBuyWizard(models.TransientModel):
     _name = 'sale.min.buy.wizard'

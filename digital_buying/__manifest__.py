@@ -32,7 +32,7 @@
     ],
     'assets': {
     'web.assets_backend': [
-        'vendor_supports/static/src/xml/sale_onboarding_list_renderer.xml',
+        'digital_buying/static/src/xml/sale_onboarding_list_renderer.xml',
     ],
 },
 

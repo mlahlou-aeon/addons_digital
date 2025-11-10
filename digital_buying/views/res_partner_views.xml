@@ -54,11 +54,11 @@
     </record>
 
     <record id="purchase.menu_procurement_management_supplier_name" model="ir.ui.menu">
-        <field name="group_ids" eval="[(6, 0, [ref('digital.group_contact_creation')])]"/>
+        <field name="group_ids" eval="[(6, 0, [ref('digital_buying.group_contact_creation')])]"/>
     </record>
 
     <record id="contacts.menu_contacts" model="ir.ui.menu">
-        <field name="group_ids" eval="[(6, 0, [ref('digital.group_contact_creation')])]"/>
+        <field name="group_ids" eval="[(6, 0, [ref('digital_buying.group_contact_creation')])]"/>
     </record>
 
 

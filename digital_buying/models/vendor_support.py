@@ -101,7 +101,7 @@ class VendorSupport(models.Model):
                 'default_name': self.name,
                 'default_product_kind': 'external',
                 'default_type':'service',
-                'default_categ_id': self.env.ref('digital.product_category_premium', raise_if_not_found=False).id
+                'default_categ_id': self.env.ref('digital_buying.product_category_premium', raise_if_not_found=False).id
                 },
         }
 

@@ -29,7 +29,7 @@ class ProductTemplate(models.Model):
             vals_list = [vals_list]
         default_support = self.env.context.get('default_support_id')
         default_support_id = getattr(default_support, 'id', default_support) or False
-        premium_categ_id = self.env.ref('digital.product_category_premium').id
+        premium_categ_id = self.env.ref('digital_buying.product_category_premium').id
 
         for vals in vals_list:
             sid = vals.get('support_id') or default_support_id
