@@ -213,34 +213,49 @@ class SaleOrder(models.Model):
         PurchaseOrder = self.env["purchase.order"]
         PurchaseOrderLine = self.env["purchase.order.line"]
 
-        created_pos = []
+        po_by_vendor = {}
+        created_pos = self.env["purchase.order"]
 
         for line in self.order_line:
             if not line.product_id:
                 continue
-            if line.product_id.product_kind != 'external':
+            if getattr(line.product_id, "product_kind", False) != "external":
                 continue
 
             vendor, seller = self._get_vendor_and_seller_for_line(line)
             if not vendor:
                 continue
 
-            po = PurchaseOrder.with_company(self.company_id).create({
-                "partner_id": vendor.id,
-                "company_id": self.company_id.id,
-                "origin": self.name,
-                "sale_id": self.id,
-            })
+            key = (vendor.id, self.company_id.id)
+            po = po_by_vendor.get(key)
+
+            if not po:
+                po = PurchaseOrder.with_company(self.company_id).search([
+                    ("partner_id", "=", vendor.id),
+                    ("company_id", "=", self.company_id.id),
+                    ("sale_id", "=", self.id),
+                    ("state", "in", ["draft", "sent", "to_approve"]),
+                ], limit=1)
+
+                if not po:
+                    po = PurchaseOrder.with_company(self.company_id).create({
+                        "partner_id": vendor.id,
+                        "company_id": self.company_id.id,
+                        "origin": self.name,
+                        "sale_id": self.id,
+                    })
+
+                po_by_vendor[key] = po
+                created_pos |= po
 
             po_uom = (seller and seller.product_uom_id) or line.product_id.uom_po_id or line.product_uom_id
             qty = line.product_uom_id._compute_quantity(line.product_uom_qty, po_uom)
-
             taxes = line.product_id.supplier_taxes_id.filtered(lambda t: t.company_id == po.company_id)
 
             PurchaseOrderLine.create({
                 "order_id": po.id,
                 "product_id": line.product_id.id,
-                "support_id": line.support_id.id,
+                "support_id": getattr(line, "support_id", False) and line.support_id.id or False,
                 "name": line.name or line.product_id.display_name,
                 "product_qty": qty,
                 "product_uom_id": po_uom.id,
@@ -248,8 +263,9 @@ class SaleOrder(models.Model):
                 "tax_ids": [(6, 0, taxes.ids)],
             })
 
-            created_pos.append(po)
-            po.button_confirm()
+        for po in created_pos:
+            if po.state in ("draft", "sent"):
+                po.button_confirm()
 
         return created_pos
 
