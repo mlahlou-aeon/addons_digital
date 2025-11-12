@@ -4,6 +4,8 @@ from odoo.exceptions import ValidationError,UserError
 from dateutil.relativedelta import relativedelta
 from collections import defaultdict
 from odoo.tools import float_round, float_is_zero, float_compare
+from odoo.fields import Command
+
 
 SALE_ORDER_STATE = [
     ('draft', "Devis"),
@@ -282,6 +284,71 @@ class SaleOrder(models.Model):
         if not vendor:
             vendor = seller.partner_id if seller else False
         return vendor, seller
+    
+    def _build_support_section_commands(self):
+        """Return a list of Command.* to (re)create sections per support and resequence lines.
+        Does not do direct create/unlink; safe for UI round-trips."""
+        self.ensure_one()
+        lines = self.order_line
+        real_lines = lines.filtered(lambda l: not l.display_type)
+        # Remove all existing auto sections if there are no real lines
+        if not real_lines:
+            auto_secs = lines.filtered('is_auto_support_section')
+            return [Command.delete(l.id) for l in auto_secs]
+
+        # Group by support, preserving first appearance order
+        by_support, seen = defaultdict(list), []
+        for l in real_lines.sorted('sequence'):
+            sup = l.support_id
+            if not sup:
+                continue
+            if sup not in by_support:
+                seen.append(sup)
+            by_support[sup].append(l)
+
+        if not seen:
+            # no supports → remove obsolete auto sections if any
+            auto_secs = lines.filtered('is_auto_support_section')
+            return [Command.delete(l.id) for l in auto_secs] if auto_secs else []
+
+        # Try to reuse existing auto sections by name
+        auto_secs = lines.filtered('is_auto_support_section')
+        cmds, used_secs, seq = [], set(), 10
+
+        for sup in seen:
+            wanted_name = _("%s") % (sup.display_name or "")
+            sec = auto_secs.filtered(lambda s: s.name == wanted_name)[:1]
+            if sec:
+                used_secs.add(sec.id)
+                if sec.sequence != seq or sec.name != wanted_name:
+                    cmds.append(Command.update(sec.id, {'sequence': seq, 'name': wanted_name}))
+            else:
+                cmds.append(Command.create({
+                    'display_type': 'line_note',
+                    'name': wanted_name,
+                    'sequence': seq,
+                    'is_auto_support_section': True,
+                }))
+            seq += 10
+            
+            for l in sorted(by_support[sup], key=lambda x: x.sequence):
+                if l.sequence != seq:
+                    cmds.append(Command.update(l.id, {'sequence': seq}))
+                seq += 10
+
+        for sec in auto_secs:
+            if sec.id not in used_secs:
+                cmds.append(Command.delete(sec.id))
+
+        return cmds
+
+    def _rebuild_support_sections(self):
+        for order in self:
+            cmds = order._build_support_section_commands()
+            if cmds:
+                # one atomic write; prevents KeyError in web_read
+                order.with_context(skip_support_sections=True).write({'order_line': cmds})
+
 
 
 class SaleOrderLine(models.Model):
@@ -311,6 +378,9 @@ class SaleOrderLine(models.Model):
         'product.product', compute='_compute_allowed_products', store=False)
     allowed_product_tmpl_ids = fields.Many2many(
         'product.template', compute='_compute_allowed_products', store=False)
+    is_auto_support_section = fields.Boolean(
+    string="Auto Support Section", default=False, readonly=True
+    )
 
     @api.depends('support_id')
     def _compute_allowed_products(self):
@@ -459,6 +529,9 @@ class SaleOrderLine(models.Model):
             values['sequence'] = int(self.sequence or 0) + 1
             self.with_context(no_free_goods=True).order_id.write({'order_line': [(0, 0, values)]})
 
+        if not self.env.context.get("skip_support_sections") and self.order_id.state in ("draft", "sent"):
+            self.order_id._rebuild_support_sections()
+
     def _remove_existing_free_line(self):
         free_line = self._get_existing_free_line()
         if free_line:
@@ -497,6 +570,7 @@ class SaleOrderLine(models.Model):
             'price_unit': 0.0,
             'purchase_price': 0.0,
             'discount': 0.0,
+            "support_id": self.support_id.id,
         }
 
         return vals
