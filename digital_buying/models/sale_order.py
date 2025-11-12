@@ -468,6 +468,10 @@ class SaleOrderLine(models.Model):
         for line in lines.with_context(ctx):
             if not line.display_type and not line.is_free_line:
                 line._apply_or_cleanup_free_services_from_support()
+
+        if not self.env.context.get("skip_support_sections"):
+            orders = lines.mapped("order_id")
+            orders._rebuild_support_sections()
         return lines
 
     def write(self, vals):
@@ -478,6 +482,9 @@ class SaleOrderLine(models.Model):
             for line in self.with_context(ctx):
                 if not line.display_type and not line.is_free_line:
                     line._apply_or_cleanup_free_services_from_support()
+                    
+        if not self.env.context.get("skip_support_sections"):
+            self.mapped("order_id")._rebuild_support_sections()
         return res
     
 
@@ -529,9 +536,6 @@ class SaleOrderLine(models.Model):
             self._ensure_slot_after_line()
             values['sequence'] = int(self.sequence or 0) + 1
             self.with_context(no_free_goods=True).order_id.write({'order_line': [(0, 0, values)]})
-
-        if not self.env.context.get("skip_support_sections") and self.order_id.state in ("draft", "sent"):
-            self.order_id._rebuild_support_sections()
 
     def _remove_existing_free_line(self):
         free_line = self._get_existing_free_line()
