@@ -316,7 +316,7 @@ class SaleOrder(models.Model):
         cmds, used_secs, seq = [], set(), 10
 
         for sup in seen:
-            wanted_name = _("%s") % (sup.display_name or "")
+            wanted_name = sup.display_name
             sec = auto_secs.filtered(lambda s: s.name == wanted_name)[:1]
             if sec:
                 used_secs.add(sec.id)
@@ -324,18 +324,19 @@ class SaleOrder(models.Model):
                     cmds.append(Command.update(sec.id, {'sequence': seq, 'name': wanted_name}))
             else:
                 cmds.append(Command.create({
-                    'display_type': 'line_note',
+                    'display_type': 'line_section',
                     'name': wanted_name,
                     'sequence': seq,
                     'is_auto_support_section': True,
                 }))
             seq += 10
-            
+            # Resequence the group's real lines (paid + free) in their current order
             for l in sorted(by_support[sup], key=lambda x: x.sequence):
                 if l.sequence != seq:
                     cmds.append(Command.update(l.id, {'sequence': seq}))
                 seq += 10
 
+        # Remove obsolete auto sections
         for sec in auto_secs:
             if sec.id not in used_secs:
                 cmds.append(Command.delete(sec.id))
