@@ -27,6 +27,7 @@
         "views/product_template_view.xml",
         "views/sale_order_view.xml",
         "views/account_form_view.xml",
+        "views/uom_from_view.xml",
         "wizard/bc_client_view.xml",
         "wizard/min_buy_wizard_view.xml",
     ],

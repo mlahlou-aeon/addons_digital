@@ -1,6 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
 
+    <record id="product_template_search_inherit" model="ir.ui.view">
+        <field name="name">product.template.search.inherit</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_search_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="support_id"/>
+            </xpath>
+        </field>
+    </record>
+    
     <record id="product_template_list_inherit" model="ir.ui.view">
         <field name="name">product.template.list.inherit</field>
         <field name="model">product.template</field>
@@ -10,6 +21,7 @@
                 <list string="Produits" multi_edit="1" sample="1">
                     <header>
                         <button string="Imprimer les étiquettes" type="object" name="action_open_label_layout"/>
+                        <button name="action_add_to_order" type="object" string="Ajouter" />
                     </header>
                     <field name="name"/>
                     <field name="product_kind" optional="show"/>

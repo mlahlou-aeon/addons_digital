@@ -2,6 +2,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError,UserError
 from datetime import date
+from odoo.fields import Command
 
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
@@ -115,3 +116,16 @@ class ProductTemplate(models.Model):
                 t.list_price = public
             else:
                 t.list_price = t.public_price
+
+    def action_add_to_order(self):
+        """Add the current product to the stock picking."""
+        order_id = self.env['sale.order'].browse(self._context.get('active_id'))
+        if order_id:
+            products = self
+            for product in products:
+                order_id.write({
+                    'order_line': [Command.create(
+                        { 
+                            'product_id': product.id,
+                            'support_id': product.support_id.id if product.support_id else False})],
+                })

@@ -349,6 +349,19 @@ class SaleOrder(models.Model):
             if cmds:
                 # one atomic write; prevents KeyError in web_read
                 order.with_context(skip_support_sections=True).write({'order_line': cmds})
+    
+    def sale_order_select_product(self):
+
+        list_view = self.env.ref('product.product_template_tree_view')
+   
+        return {
+        'name': _('Sélectionner les produits'),
+        'type': 'ir.actions.act_window',  
+        'res_model': 'product.template',    
+        'view_mode': 'list',  
+        'views': [(list_view.id, 'list')],  
+        'target': 'new',
+        }
 
 
 
@@ -495,7 +508,8 @@ class SaleOrderLine(models.Model):
         if not support:
             self._remove_existing_free_line()
             return
-
+        if not self.product_uom_id._is_free:
+            return
         free_qty, free_product = self._compute_free_qty_from_tiers(support)
         if free_qty <= 0:
             self._remove_existing_free_line()
@@ -557,18 +571,12 @@ class SaleOrderLine(models.Model):
         taxes = product.taxes_id.filtered(lambda t: t.company_id == order.company_id)
         taxes = fpos.map_tax(taxes) if fpos else taxes
 
-        # Descriptive name
-        name = "%s\n(%s)" % (
-            product.get_product_multiline_description_sale() or product.display_name,
-            _("Gratuité")
-        )
-
         vals = {
             'order_id': order.id,
             'is_free_line': True,
             'support_bonus_of_id': self.id,
             'product_id': product.id,
-            'name': name,
+            'name': "Gratuité",
             'product_uom_qty': qty,
             'product_uom_id': product.uom_id.id,
             'public_price': 0.0,
