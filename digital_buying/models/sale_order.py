@@ -2,7 +2,7 @@
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError,UserError
 from dateutil.relativedelta import relativedelta
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from odoo.tools import float_round, float_is_zero, float_compare
 from odoo.fields import Command
 
@@ -286,60 +286,86 @@ class SaleOrder(models.Model):
         return vendor, seller
     
     def _build_support_section_commands(self):
-        """Return a list of Command.* to (re)create sections per support and resequence lines.
-        Does not do direct create/unlink; safe for UI round-trips."""
+        """
+        Build sections on the order lines with the following hierarchy:
+
+        Level 1: Category section = product.categ_id (parent category)
+        Level 2: Subsection:
+            - If the line has a support_id          -> subsection = support name
+            - Else if product sub_category  -> subsection = sub-category name
+            - Else                                  -> subsection = "Other"
+
+        Products are grouped by (category -> [support or sub-category]),
+        and their relative order is preserved inside each group.
+        """
         self.ensure_one()
         lines = self.order_line
-        real_lines = lines.filtered(lambda l: not l.display_type)
-        # Remove all existing auto sections if there are no real lines
+        real_lines = lines.filtered(lambda l: not l.display_type and l.product_id)
+
         if not real_lines:
             auto_secs = lines.filtered('is_auto_support_section')
             return [Command.delete(l.id) for l in auto_secs]
 
-        # Group by support, preserving first appearance order
-        by_support, seen = defaultdict(list), []
+        cat_groups = OrderedDict()
+        cat_order = []
+
         for l in real_lines.sorted('sequence'):
-            sup = l.support_id
-            if not sup:
-                continue
-            if sup not in by_support:
-                seen.append(sup)
-            by_support[sup].append(l)
+            product_tmpl = l.product_template_id
 
-        if not seen:
-            # no supports → remove obsolete auto sections if any
-            auto_secs = lines.filtered('is_auto_support_section')
-            return [Command.delete(l.id) for l in auto_secs] if auto_secs else []
+            parent_cat = product_tmpl.categ_id
+            sub_cat = getattr(product_tmpl, 'sub_category', False)
 
-        # Try to reuse existing auto sections by name
-        auto_secs = lines.filtered('is_auto_support_section')
-        cmds, used_secs, seq = [], set(), 10
+            if parent_cat not in cat_groups:
+                cat_groups[parent_cat] = OrderedDict()
+                cat_order.append(parent_cat)
 
-        for sup in seen:
-            wanted_name = sup.display_name
-            sec = auto_secs.filtered(lambda s: s.name == wanted_name)[:1]
-            if sec:
-                used_secs.add(sec.id)
-                if sec.sequence != seq or sec.name != wanted_name:
-                    cmds.append(Command.update(sec.id, {'sequence': seq, 'name': wanted_name}))
+            if l.support_id:
+                group_key = ('support', l.support_id)
+            elif sub_cat:
+                group_key = ('subcat', sub_cat)
             else:
+                group_key = ('other', None)
+
+            if group_key not in cat_groups[parent_cat]:
+                cat_groups[parent_cat][group_key] = []
+            cat_groups[parent_cat][group_key].append(l)
+
+        auto_secs = lines.filtered('is_auto_support_section')
+        cmds = [Command.delete(sec.id) for sec in auto_secs]
+
+        seq = 10
+
+        for cat in cat_order:
+            cat_name = cat.display_name if cat else _("No Category")
+            cmds.append(Command.create({
+                'display_type': 'line_section',
+                'name': cat_name,
+                'sequence': seq,
+                'is_auto_support_section': True,
+            }))
+            seq += 10
+
+            groups = cat_groups[cat]
+            for (kind, obj), line_list in groups.items():
+                if kind == 'support' and obj:
+                    sub_name = obj.display_name
+                elif kind == 'subcat' and obj:
+                    sub_name = obj.name
+                else:
+                    sub_name = _("Other")
+
                 cmds.append(Command.create({
-                    'display_type': 'line_section',
-                    'name': wanted_name,
+                    'display_type': 'line_subsection',
+                    'name': sub_name,
                     'sequence': seq,
                     'is_auto_support_section': True,
                 }))
-            seq += 10
-            # Resequence the group's real lines (paid + free) in their current order
-            for l in sorted(by_support[sup], key=lambda x: x.sequence):
-                if l.sequence != seq:
-                    cmds.append(Command.update(l.id, {'sequence': seq}))
                 seq += 10
-
-        # Remove obsolete auto sections
-        for sec in auto_secs:
-            if sec.id not in used_secs:
-                cmds.append(Command.delete(sec.id))
+                
+                for line in sorted(line_list, key=lambda x: x.sequence):
+                    if int(line.sequence or 0) != seq:
+                        cmds.append(Command.update(line.id, {'sequence': seq}))
+                    seq += 10
 
         return cmds
 
@@ -353,6 +379,7 @@ class SaleOrder(models.Model):
     def sale_order_select_product(self):
 
         list_view = self.env.ref('product.product_template_tree_view')
+        today = fields.Date.today()
    
         return {
         'name': _('Sélectionner les produits'),
@@ -361,6 +388,10 @@ class SaleOrder(models.Model):
         'view_mode': 'list',  
         'views': [(list_view.id, 'list')],  
         'target': 'new',
+        'domain': [
+            '|', ('valid_from', '=', False), ('valid_from', '<=', today),
+            '|', ('valid_to',   '=', False), ('valid_to',   '>=', today),
+        ],
         }
 
 
@@ -558,9 +589,7 @@ class SaleOrderLine(models.Model):
 
     def _get_existing_free_line(self):
         self.ensure_one()
-        return self.order_id.order_line.filtered(
-            lambda l: l.is_free_line and l.support_bonus_of_id.id == self.id
-        )[:1]
+        return self.order_id.order_line.filtered(lambda l: l.is_free_line and l.support_bonus_of_id.id == self.id)[:1]
 
     def _prepare_free_line_vals(self, product, qty):
         """Prepare vals for the free service line, mirroring taxes/UoM and analytics."""

@@ -20,17 +20,17 @@
             <xpath expr="//list" position="replace">
                 <list string="Produits" multi_edit="1" sample="1">
                     <header>
-                        <button string="Imprimer les étiquettes" type="object" name="action_open_label_layout"/>
                         <button name="action_add_to_order" type="object" string="Ajouter" />
                     </header>
                     <field name="name"/>
+                    <field name="support_id"/>
                     <field name="product_kind" optional="show"/>
                     <field name="categ_id" optional="show"/>
                     <field name="sub_category" optional="show"/>  
                     <field name="uom_id"/>
                     <field name="public_price"/>
-                    <field name="list_price" invisible="1"/>
-                    <field name="standard_price" string="Prix d'achat"/>
+                    <field name="list_price" optional="hide"/>
+                    <field name="standard_price" string="Prix d'achat" optional="hide"/>
                     <field name="margin_pct" string="Commission(%)"/>
                 </list>
             </xpath>

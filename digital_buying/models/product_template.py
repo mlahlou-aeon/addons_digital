@@ -123,6 +123,9 @@ class ProductTemplate(models.Model):
         if order_id:
             products = self
             for product in products:
+                if product.support_id and product.support_id.blacklisted:
+                    msg = _("Le support '%s' est blacklisté et ne peut pas être utilisé.") % product.support_id.display_name
+                    raise UserError(msg)
                 order_id.write({
                     'order_line': [Command.create(
                         { 
